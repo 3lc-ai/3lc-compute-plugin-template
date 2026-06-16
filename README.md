@@ -1,126 +1,114 @@
 # hub-plugin_template
 
-Minimal boilerplate for a 3LC compute-service plugin hosted in its own
-repository. Use this as a starting point when building a plugin that should
-ship and version independently of the `3lc-insights` repo.
+Boilerplate for 3LC compute-service plugins hosted in their own repository — so a
+plugin can ship and version independently of `3lc-insights`.
 
-## Layout
+It contains **two example plugins**, one per isolation tier:
 
+| | [`template_host`](plugins/template_host) | [`template_venv`](plugins/template_venv) |
+|---|---|---|
+| Runs | in-process, in the compute-service | out-of-process, in its own venv |
+| Dependencies | must be a subset of the service's | its own (may conflict with the service) |
+| Files | `plugin.toml` + `__init__.py` + `ui.html` | `plugin.toml` + `pyproject.toml` + `plugin.py` + `ui.html` |
+| Pick it when | your plugin is lightweight | you need your own / heavy / conflicting deps |
+
+**The only structural difference is `runtime.isolation` in the manifest** (and the
+`venv` tier additionally declares its deps in a `pyproject.toml`). Everything else —
+how metadata is declared, how the plugin is discovered, how it's served — is identical.
+
+## How a plugin is described: the manifest
+
+Every plugin has a `plugin.toml` (or a `[tool.tlc-compute]` table in a
+`pyproject.toml`). It is the **single source of metadata**, and it is read **without
+importing the plugin** — so discovery can list, gate and route a plugin even when its
+code can't be imported (it shows greyed-out with a reason instead of vanishing).
+
+```toml
+id = "template-host"            # public id, used in URLs (hyphens ok)
+name = "Template (host)"
+version = "0.1.0"
+min_service_version = "0.2.0"
+
+[ui]
+display_mode = "sidebar"        # sidebar | action | hidden
+section = "Examples"
+compatible_with = ["table"]
+
+[runtime]
+isolation = "host"              # host | venv  ← the tier switch
+entrypoint = "template_host:TemplateHostPlugin"   # module:Class
 ```
-hub-plugin_template/
-├── README.md
-├── LICENSE
-└── plugins/                       <- "plugin root" you point compute-service at
-    └── template_plugin/           <- the plugin package (one of possibly many)
-        ├── __init__.py            <- defines & registers the ComputePlugin
-        └── ui.html                <- self-contained UI fragment
-```
 
-The `plugins/` directory is the **plugin root**. Every immediate subdirectory
-that contains an `__init__.py` is imported as a top-level Python package and
-must call `register(MyPlugin())` at import time. You can host multiple plugins
-in the same repo — just add more sibling directories under `plugins/`.
-
-The package directory name (`template_plugin/`) becomes a top-level Python
-module name when loaded, so it must:
-
-* be a valid Python identifier (snake_case, no hyphens),
-* not collide with any other top-level package name (stdlib, installed
-  dependencies, or other external plugins).
-
-The plugin's public `id` (e.g. `"template-plugin"`) is independent of the
-directory name — it can use hyphens because it is only used in URLs and the
-plugin manifest.
+The service imports the `entrypoint` and instantiates the class. There is **no
+metadata on the Python class and no `register()` call** — the class carries only
+behavior (`get_ui_fragment`, `compute`, and — for jobs — `run_job(ctx)`).
 
 ## Loading the plugin
 
-The 3LC compute service can pick this directory up three ways:
-
-### 1. CLI flag (preferred for development)
+Point the compute-service at the **`plugins/` root** (it loads every plugin under it):
 
 ```bash
+# 1. CLI flag (repeatable)
 3lc-compute --plugin-dir /path/to/hub-plugin_template/plugins
-```
 
-The flag is repeatable; pass it multiple times to load several plugin roots.
-
-### 2. Environment variable
-
-```bash
+# 2. Environment variable (os.pathsep-joined)
 export TLC_COMPUTE_EXTERNAL_PLUGIN_DIRS=/path/to/hub-plugin_template/plugins
-3lc-compute
-```
 
-Multiple paths are joined with `os.pathsep` (`:` on macOS/Linux, `;` on
-Windows).
-
-### 3. Runtime API
-
-```bash
+# 3. Runtime API
 curl -X POST http://localhost:5020/api/admin/plugins/dirs \
   -H 'Content-Type: application/json' \
   -d '{"directory": "/path/to/hub-plugin_template/plugins"}'
 ```
 
-The compute service responds with the list of plugins it loaded:
-
-```json
-{
-  "directory": "/path/to/hub-plugin_template/plugins",
-  "already_registered": false,
-  "loaded": ["template-plugin"],
-  "skipped": []
-}
-```
-
 ## Verifying it works
 
-Once loaded, the plugin is exposed on the same endpoints as built-in plugins:
+Both plugins expose the same generic endpoints:
 
 ```bash
-curl http://localhost:5020/api/plugins/template-plugin/manifest
-curl http://localhost:5020/api/plugins/template-plugin/compute?url=hello
-curl http://localhost:5020/api/plugins/template-plugin/ui
+curl http://localhost:5020/api/plugins/template-host/manifest
+curl http://localhost:5020/api/plugins/template-host/compute?url=hello
+curl http://localhost:5020/api/plugins/template-host/ui
+
+curl http://localhost:5020/api/plugins/template-venv/compute?url=hello
+# Run a streaming job (NDJSON: progress / metric / log, then a terminal done):
+curl -N -X POST http://localhost:5020/api/plugins/template-venv/run \
+  -H 'Content-Type: application/json' -d '{"steps": 5}'
 ```
 
-## Iteration loop
+## Running the venv example
 
-Edit `plugins/template_plugin/__init__.py`, then reload without restarting the
-service:
+By default the venv worker runs on the **host interpreter**, so the stdlib-only
+example above works out of the box. To run it in a real, isolated venv with its own
+dependencies (the actual point of this tier):
 
 ```bash
-# Reload one plugin by id
-curl -X POST http://localhost:5020/api/admin/plugins/template-plugin/reload
+cd plugins/template_venv
+uv venv .venv
+uv pip install --python .venv/bin/python 3lc-compute   # + your own deps from pyproject.toml
+```
 
-# Or reload every plugin in this directory at once
+The service resolves the worker interpreter in this order: the
+`TLC_COMPUTE_PLUGIN_VENV_TEMPLATE_VENV` env var → `runtime.venv_python` in the
+manifest → a `.venv/` next to the plugin → the host interpreter. So once the `.venv`
+above exists it is used automatically. (Fully automatic provisioning from
+`pyproject.toml` is in progress.)
+
+## Iteration
+
+```bash
+# Reload one plugin by id (host plugins; picks up code edits)
+curl -X POST http://localhost:5020/api/admin/plugins/template-host/reload
+
+# Reload everything in this directory
 curl -X POST http://localhost:5020/api/admin/plugins/dirs/reload \
   -H 'Content-Type: application/json' \
   -d '{"directory": "/path/to/hub-plugin_template/plugins"}'
 ```
 
-Reload tears down the plugin's runtime, purges its modules from
-`sys.modules`, re-imports the package (picking up your edits), and calls
-`initialise_runtime()` on the new instance. Generic routes
-(`/api/plugins/<id>/compute`, `/ui`, `/manifest`) keep working across the
-reload because they dispatch through the registry at request time.
+## Notes
 
-## Detaching
-
-To unload all plugins from this directory and remove it from `sys.path`:
-
-```bash
-curl -X DELETE \
-  "http://localhost:5020/api/admin/plugins/dirs?directory=/path/to/hub-plugin_template/plugins"
-```
-
-Add `&force=true` to override the running-jobs guard.
-
-## Limitations
-
-* Custom Litestar route handlers (returned by `get_route_handlers()`) are
-  mounted at compute-service startup. Plugins added at runtime can use the
-  generic `/api/plugins/<id>/compute` and `/api/plugins/<id>/ui` endpoints
-  out of the box, but custom controllers require a service restart.
-* External plugin packages must not collide on top-level Python module names
-  with each other or with installed dependencies. The loader skips
-  collisions with a logged warning.
+* Package/dir names must be valid Python identifiers and must not collide with other
+  top-level modules. The public `id` (in the manifest) is independent and may use hyphens.
+* This template targets the manifest-first plugin contract (compute-service ≥ 0.2). On
+  older services the old class-attribute + `register()` form is still accepted as a
+  fallback.

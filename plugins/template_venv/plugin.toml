@@ -1,0 +1,23 @@
+# Manifest for a VENV (out-of-process) plugin.
+#
+# Same schema as the host manifest — only `runtime.isolation` differs. Parsed without
+# importing the plugin. The `entrypoint` is resolved inside the worker, whose working
+# directory is this plugin's folder, so "plugin:Class" refers to plugin.py here.
+
+id = "template-venv"
+name = "Template (venv)"
+description = "Out-of-process plugin with its own venv. Use this tier when you need your own/conflicting deps."
+version = "0.1.0"
+icon = "✦"
+min_service_version = "0.2.0"
+
+[ui]
+display_mode = "sidebar"
+section = "Examples"
+priority = 9
+compatible_with = ["table"]
+
+[runtime]
+isolation = "venv"                         # <- the only structural difference from a host plugin
+entrypoint = "plugin:TemplateVenvPlugin"   # module:Class, resolved in the worker (cwd = this dir)
+requires_gpu = false

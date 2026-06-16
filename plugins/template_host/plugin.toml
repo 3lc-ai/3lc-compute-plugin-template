@@ -1,0 +1,23 @@
+# Manifest for a HOST (in-process) plugin.
+#
+# This file is parsed WITHOUT importing the plugin, so discovery can list, gate and
+# route the plugin even if its code can't be imported (it then shows greyed-out with
+# a reason instead of disappearing). The keys below may also be nested under a
+# [tool.tlc-compute] table if you'd rather keep the manifest inside a pyproject.toml.
+
+id = "template-host"                       # public id, used in URLs (hyphens ok)
+name = "Template (host)"
+description = "Minimal in-process plugin. Use this tier when your deps are a subset of the service."
+version = "0.1.0"
+icon = "✦"
+min_service_version = "0.2.0"
+
+[ui]
+display_mode = "sidebar"                   # sidebar | action | hidden
+section = "Examples"
+priority = 10
+compatible_with = ["table"]
+
+[runtime]
+isolation = "host"                         # host = in-process; venv = out-of-process worker
+entrypoint = "template_host:TemplateHostPlugin"   # module:Class the host imports + instantiates
