@@ -1,0 +1,21 @@
+# Manifest — the single source of this plugin's metadata, parsed WITHOUT importing the
+# code (discovery can list, gate, and route the plugin even when it can't be imported).
+# Only the essentials here; the example plugin's plugin.toml documents every field:
+# https://github.com/3lc-ai/3lc-compute-plugin-example/blob/main/src/tlc_plugin_example/plugin.toml
+
+id = "template"                       # public id; used in URLs and as the SocketIO namespace. Hyphens ok.
+name = "Template"
+description = "Bare-bones starting point for a 3LC compute-service plugin."
+version = "0.1.0"                     # SemVer; bump on every release
+icon = "✦"
+min_service_version = "0.1.0"
+
+[ui]
+display_mode = "sidebar"              # sidebar nav item, grouped under `section`
+section = "Examples"
+compatible_with = ["table"]
+
+[runtime]
+isolation = "venv"                    # runs out-of-process in this plugin's own venv (the way)
+entrypoint = "tlc_plugin_template:TemplatePlugin"   # module:Class the host instantiates
+provision_extra = "template"          # this plugin's extra in the repo-root pyproject.toml
