@@ -1,0 +1,40 @@
+<!--
+  The plugin's UI: one self-contained HTML+CSS+JS fragment, served at
+  GET /api/plugins/template/ui and mounted into the Hub by the frontend.
+
+  Two rules make a fragment a good citizen:
+  1. Reach the host ONLY through window.PLUGIN_API (typed via the repo-root
+     jsconfig.json — hover it in your editor).
+  2. Style with the house CSS variables (var(--text), var(--bg-card), ...) so the
+     fragment matches the active theme, light and dark.
+-->
+<div class="template-plugin">
+  <style>
+    .template-plugin { color: var(--text); padding: 20px; max-width: 640px; }
+    .template-plugin h1 { margin: 0 0 4px; font-size: 20px; }
+    .template-plugin p { color: var(--text-muted); font-size: 12px; margin: 0 0 16px; }
+    .template-plugin button { font: inherit; font-size: 12px; padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm, 4px); background: var(--bg); color: var(--text); cursor: pointer; }
+    .template-plugin button:hover { background: var(--accent-light); border-color: var(--accent); }
+    .template-plugin pre { background: var(--code-bg); color: var(--code-fg); border-radius: var(--radius-sm, 4px); padding: 10px; overflow: auto; font-size: 12px; }
+  </style>
+
+  <h1>Template plugin</h1>
+  <p>Replace everything you see with your own UI.</p>
+
+  <button id="template-go">Call compute()</button>
+  <pre id="template-out">—</pre>
+
+  <script>
+  (function () {
+    var API = window.PLUGIN_API;
+    var EL = document.currentScript.closest('.template-plugin');
+    var base = API.getConfig('compute_service_url');
+
+    EL.querySelector('#template-go').onclick = function () {
+      API.authFetch(base + '/api/plugins/template/compute?greeting=hi')
+        .then(function (r) { return r.json(); })
+        .then(function (j) { EL.querySelector('#template-out').textContent = JSON.stringify(j, null, 2); });
+    };
+  })();
+  </script>
+</div>

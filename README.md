@@ -1,114 +1,140 @@
-# hub-plugin_template
+# 3lc-compute-plugin-template
 
-Boilerplate for 3LC compute-service plugins hosted in their own repository — so a
-plugin can ship and version independently of `3lc-insights`.
+The starting point for writing a [3LC compute service](https://github.com/3lc-ai) plugin —
+and a runnable tour of what one can do. Two plugins ship in this repo:
 
-It contains **two example plugins**, one per isolation tier:
-
-| | [`template_host`](plugins/template_host) | [`template_venv`](plugins/template_venv) |
+| | [`template`](src/tlc_plugin_template) | [`example` — Mission Control](src/tlc_plugin_example) |
 |---|---|---|
-| Runs | in-process, in the compute-service | out-of-process, in its own venv |
-| Dependencies | must be a subset of the service's | its own (may conflict with the service) |
-| Files | `plugin.toml` + `__init__.py` + `ui.html` | `plugin.toml` + `pyproject.toml` + `plugin.py` + `ui.html` |
-| Pick it when | your plugin is lightweight | you need your own / heavy / conflicting deps |
+| What it is | The bare-bones skeleton you **copy** to start | A working tour of the **whole** contract, staged as a rocket launch |
+| Files | `plugin.toml` + `__init__.py` + `ui.html` | + `routes.py` (custom REST) + `patch.py` (binary asset) |
+| Shows | manifest, `compute()`, a UI fragment | + `run_job(ctx)` jobs with live progress/metrics/telemetry and abort, custom routes (JSON, 404, binary PNG, raw upload), `PLUGIN_API`/`TlcData`/`PluginJobs`, lifecycle hooks, quick actions |
 
-**The only structural difference is `runtime.isolation` in the manifest** (and the
-`venv` tier additionally declares its deps in a `pyproject.toml`). Everything else —
-how metadata is declared, how the plugin is discovered, how it's served — is identical.
+Both are `venv`-isolated: the host reads each plugin's `plugin.toml` **without importing it**,
+provisions the plugin its own virtual environment, and runs it out-of-process behind a
+reverse proxy. Your dependencies live in your plugin's extra in [`pyproject.toml`](pyproject.toml)
+and never touch the host venv — pin anything you like.
 
-## How a plugin is described: the manifest
+The full contract reference lives in the
+[**plugin author guide**](https://github.com/3lc-ai/3lc-compute-plugin-sdk/blob/main/docs/plugin-guide.md)
+(`3lc-compute-plugin-sdk`). This README gets you running.
 
-Every plugin has a `plugin.toml` (or a `[tool.tlc-compute]` table in a
-`pyproject.toml`). It is the **single source of metadata**, and it is read **without
-importing the plugin** — so discovery can list, gate and route a plugin even when its
-code can't be imported (it shows greyed-out with a reason instead of vanishing).
-
-```toml
-id = "template-host"            # public id, used in URLs (hyphens ok)
-name = "Template (host)"
-version = "0.1.0"
-min_service_version = "0.2.0"
-
-[ui]
-display_mode = "sidebar"        # sidebar | action | hidden
-section = "Examples"
-compatible_with = ["table"]
-
-[runtime]
-isolation = "host"              # host | venv  ← the tier switch
-entrypoint = "template_host:TemplateHostPlugin"   # module:Class
-```
-
-The service imports the `entrypoint` and instantiates the class. There is **no
-metadata on the Python class and no `register()` call** — the class carries only
-behavior (`get_ui_fragment`, `compute`, and — for jobs — `run_job(ctx)`).
-
-## Loading the plugin
-
-Point the compute-service at the **`plugins/` root** (it loads every plugin under it):
+## Try it in two minutes
 
 ```bash
-# 1. CLI flag (repeatable)
-3lc-compute --plugin-dir /path/to/hub-plugin_template/plugins
-
-# 2. Environment variable (os.pathsep-joined)
-export TLC_COMPUTE_EXTERNAL_PLUGIN_DIRS=/path/to/hub-plugin_template/plugins
-
-# 3. Runtime API
-curl -X POST http://localhost:5020/api/admin/plugins/dirs \
-  -H 'Content-Type: application/json' \
-  -d '{"directory": "/path/to/hub-plugin_template/plugins"}'
+git clone https://github.com/3lc-ai/3lc-compute-plugin-template
+# Point a compute service at the src/ folder (repeatable flag, or use the
+# TLC_COMPUTE_EXTERNAL_PLUGIN_DIRS env var):
+3lc-compute --plugin-dir /path/to/3lc-compute-plugin-template/src
 ```
 
-## Verifying it works
+The service discovers both plugins, provisions each a venv (`uv sync --extra <plugin>` against
+this repo — first run takes a few seconds), and they appear in the Hub sidebar under
+**Examples**. Open **Mission Control**, poll go/no-go, recruit some crew, and launch a mission —
+then watch the same job stream into the generic Queue & Progress panel.
 
-Both plugins expose the same generic endpoints:
+No Hub handy? The whole surface also speaks curl:
 
 ```bash
-curl http://localhost:5020/api/plugins/template-host/manifest
-curl http://localhost:5020/api/plugins/template-host/compute?url=hello
-curl http://localhost:5020/api/plugins/template-host/ui
-
-curl http://localhost:5020/api/plugins/template-venv/compute?url=hello
-# Run a streaming job (NDJSON: progress / metric / log, then a terminal done):
-curl -N -X POST http://localhost:5020/api/plugins/template-venv/run \
-  -H 'Content-Type: application/json' -d '{"steps": 5}'
+curl http://localhost:5020/api/plugins/manifest/example
+curl 'http://localhost:5020/api/plugins/example/compute?station=all'      # go/no-go
+curl http://localhost:5020/api/plugins/example/crew                       # custom route
+curl http://localhost:5020/api/plugins/example/crew/elvis                 # → 404
+curl -o patch.png http://localhost:5020/api/plugins/example/patch.png     # binary route
+curl -N -X POST http://localhost:5020/api/plugins/example/run \
+  -H 'Content-Type: application/json' -d '{"destination": "Mars"}'        # streaming job
 ```
 
-## Running the venv example
+## Start your own plugin
 
-By default the venv worker runs on the **host interpreter**, so the stdlib-only
-example above works out of the box. To run it in a real, isolated venv with its own
-dependencies (the actual point of this tier):
+1. **Copy the skeleton.** Duplicate `src/tlc_plugin_template` → `src/tlc_plugin_<yours>`
+   (package names must be valid Python identifiers; the public `id` in the manifest is
+   independent and may use hyphens).
+2. **Edit `plugin.toml`.** Set `id`, `name`, `entrypoint`, and `provision_extra`. The
+   example's [`plugin.toml`](src/tlc_plugin_example/plugin.toml) documents every field.
+3. **Register it in [`pyproject.toml`](pyproject.toml).** Add an extra named after your
+   plugin (your dependencies go there), an entry in `[project.entry-points."tlc_compute.plugins"]`,
+   and your package under `[tool.hatch.build.targets.wheel]`.
+4. **Fill in the class.** `compute()` and `get_ui_fragment()` are the whole required
+   contract; grow into `run_job(ctx)` and `get_route_handlers()` by cribbing from the example.
+
+Or lift the whole repo shape into a repository of your own — that *is* the intended use.
+
+### The dev loop
+
+Code edits go live with a reload — no service restart:
 
 ```bash
-cd plugins/template_venv
-uv venv .venv
-uv pip install --python .venv/bin/python 3lc-compute   # + your own deps from pyproject.toml
-```
-
-The service resolves the worker interpreter in this order: the
-`TLC_COMPUTE_PLUGIN_VENV_TEMPLATE_VENV` env var → `runtime.venv_python` in the
-manifest → a `.venv/` next to the plugin → the host interpreter. So once the `.venv`
-above exists it is used automatically. (Fully automatic provisioning from
-`pyproject.toml` is in progress.)
-
-## Iteration
-
-```bash
-# Reload one plugin by id (host plugins; picks up code edits)
-curl -X POST http://localhost:5020/api/admin/plugins/template-host/reload
-
-# Reload everything in this directory
+# Reload everything under the plugin dir (re-provisions venvs when deps changed):
 curl -X POST http://localhost:5020/api/admin/plugins/dirs/reload \
   -H 'Content-Type: application/json' \
-  -d '{"directory": "/path/to/hub-plugin_template/plugins"}'
+  -d '{"directory": "/path/to/3lc-compute-plugin-template/src"}'
 ```
 
-## Notes
+Lint like CI does (standalone — no deps to resolve):
 
-* Package/dir names must be valid Python identifiers and must not collide with other
-  top-level modules. The public `id` (in the manifest) is independent and may use hyphens.
-* This template targets the manifest-first plugin contract (compute-service ≥ 0.2). On
-  older services the old class-attribute + `register()` form is still accepted as a
-  fallback.
+```bash
+uvx --from 'ruff>=0.15,<0.16' ruff check .
+uvx --from 'ruff>=0.15,<0.16' ruff format .
+```
+
+To develop against a sibling SDK checkout, override its source **uncommitted**:
+
+```toml
+# pyproject.toml [tool.uv.sources]  (local dev only — do not commit)
+3lc-compute-plugin-sdk = { path = "../3lc-compute-plugin-sdk", editable = true }
+```
+
+### Editor autocomplete for `ui.html`
+
+A fragment talks to the host through `window.PLUGIN_API` / `window.PluginJobs`, and both are
+**typed**: the declaration ships inside the pip-installed SDK wheel, and the repo-root
+[`jsconfig.json`](jsconfig.json) points TypeScript at it. Run `uv sync` once (creates `.venv/`)
+and VS Code autocompletes the whole bridge inside every `ui.html` — no node, no build step.
+
+## The catalog: one-click install from GitHub
+
+This repo bakes its own shop listing: [`catalog.json`](catalog.json). A catalog is a static
+JSON file listing plugins, each with versions, a raw manifest (so the Hub can render cards and
+check compatibility **without downloading anything**), and an install source. Ours points
+straight back at this repo:
+
+```
+3lc-compute-plugin-template[example] @ git+https://github.com/3lc-ai/3lc-compute-plugin-template.git@main
+```
+
+The `[extra]` is what selects one plugin out of a multi-plugin repo — no wheel publishing
+required. To use it, add the catalog to a running service (persisted across restarts):
+
+```bash
+curl -X POST http://localhost:5020/api/admin/plugins/catalogs \
+  -H 'Content-Type: application/json' \
+  -d '{"url": "https://raw.githubusercontent.com/3lc-ai/3lc-compute-plugin-template/main/catalog.json", "persist": true}'
+```
+
+…or paste that URL into the Hub's Plugins page. **Mission Control** and **Template** show up
+as installable cards; installing materializes a managed venv from the git source and registers
+the plugin live. Ship your own plugin the same way: commit a `catalog.json` next to it, point
+the source at your repo, and hand out one URL.
+
+## Repo layout
+
+```
+├── pyproject.toml            # one umbrella dist; per-plugin extras + entry points
+├── catalog.json              # the shop listing — install either plugin from GitHub
+├── jsconfig.json             # types for window.PLUGIN_API in every ui.html
+└── src/
+    ├── tlc_plugin_template/  # ← copy me
+    │   ├── plugin.toml       #    manifest (metadata; read without import)
+    │   ├── __init__.py       #    the ComputePlugin subclass (behavior only)
+    │   └── ui.html           #    the UI fragment
+    └── tlc_plugin_example/   # ← crib from me
+        ├── plugin.toml       #    every manifest field, annotated
+        ├── __init__.py       #    compute + run_job + lifecycle hooks
+        ├── routes.py         #    custom REST routes, one of every response shape
+        ├── patch.py          #    a generated binary asset (stdlib-only PNG)
+        └── ui.html           #    the full PLUGIN_API / PluginJobs tour
+```
+
+## License
+
+Apache-2.0 — see [LICENSE](LICENSE).
