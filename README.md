@@ -10,7 +10,7 @@ Want to see what a plugin can *do* first? The example plugin,
 tour of the whole contract — jobs with live progress and abort, custom REST routes, the
 typed UI bridge, lifecycle hooks. Crib from it as you grow. The full contract reference
 lives in the
-[**plugin author guide**](https://github.com/3lc-ai/3lc-compute-plugin-sdk/blob/main/docs/plugin-guide.md)
+[**plugin author guide**](https://3lc-ai.github.io/3lc-compute-plugin-sdk/plugin-guide.html)
 (`3lc-compute-plugin-sdk`).
 
 ## What's in the box
