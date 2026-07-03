@@ -34,7 +34,13 @@ reverse proxy. Your dependencies live in your plugin's extra in
 
 ## Make it yours
 
-After **Use this template**, four renames:
+Using [Claude Code](https://claude.com/claude-code)? Run **`/create-plugin <what it should
+do>`** in your generated repo — a bundled skill ([`.claude/skills/create-plugin`](.claude/skills/create-plugin/SKILL.md))
+that interviews you about the pieces your one-liner left open (inputs, outputs, jobs, GPU),
+then does the renames below and implements a first working version, using only the public
+[plugin guide](https://3lc-ai.github.io/3lc-compute-plugin-sdk/plugin-guide.html).
+
+Doing it by hand: after **Use this template**, four renames:
 
 1. **The package.** `src/tlc_plugin_template` → `src/tlc_plugin_<yours>` (package names must
    be valid Python identifiers; the public `id` in the manifest is independent and may use
