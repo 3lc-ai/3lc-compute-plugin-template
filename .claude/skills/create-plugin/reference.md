@@ -92,7 +92,7 @@ runs the job and talks to `ctx` (`JobContext`):
 | `ctx.progress(*, percent, label="", timing=None)` | generic progress bar; `percent=-1` = indeterminate |
 | `ctx.metric(label, value)` | scalar metric card on the generic panel |
 | `ctx.log(message)` | a log line for the job |
-| `ctx.result(*, run_url)` | the canonical "open result" link (last write wins) |
+| `ctx.result(url)` | the canonical "open result" link (last write wins) |
 | `ctx.emit(name, payload)` | plugin-private event for this plugin's own UI only |
 
 Rules: `run_job` is a plain `def` (never `async`); raise to fail the job; keep
@@ -181,12 +181,11 @@ button/modal styles, no `position: fixed`, must work in dark mode.
 ## Packaging (this template's shape)
 
 One dist, one plugin. In `pyproject.toml`: base `dependencies` stay at the SDK floor only
-(`3lc-compute-plugin-sdk>=0.2.2,<0.3.0`); the plugin's real deps go in its extra under
+(`3lc-compute-plugin-sdk>=0.3.1,<0.4.0`); the plugin's real deps go in its extra under
 `[project.optional-dependencies]` (that's what lands in the provisioned venv); the entry
-point under `[project.entry-points."tlc_compute.plugins"]` names the import package. If the
-plugin uses `tlc_plugin_sdk.shared.*` data-plane helpers, depend on
-`3lc-compute-plugin-sdk[shared]` **and** add `3lc[pandas]>=3.0.0,<4.0.0` — both resolve
-from public PyPI, no custom indexes needed.
+point under `[project.entry-points."tlc_compute.plugins"]` names the import package. The SDK
+brings the `tlc` data plane (`3lc[pandas]`) and the `tlc_plugin_sdk.shared.*` helpers — no
+separate `3lc` dep is needed. Everything resolves from public PyPI, no custom indexes needed.
 
 `catalog.json` is the one-URL install listing: `source` is a PEP 508 git ref —
 `<dist>[<extra>] @ git+https://github.com/<you>/<repo>.git@main` — and the embedded
