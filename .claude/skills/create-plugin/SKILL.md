@@ -107,8 +107,8 @@ reference.md exactly — in particular:
   checkpoints. Never hand-roll a queue, job store, or cancel route — the host owns those.
 - Custom routes are bare relative `@get`/`@post` Litestar handlers in a `routes.py`
   (`sync_to_thread=True` for blocking work), returned from `get_route_handlers()`.
-- Data access goes through the `tlc` SDK server-side (add `3lc-compute-plugin-sdk[shared]`
-  + the `3lc` dep per the comments in `pyproject.toml` if you use `tlc_plugin_sdk.shared.*`).
+- Data access goes through the `tlc` SDK server-side; the plugin SDK brings `tlc` with it, so
+  `tlc_plugin_sdk.shared.*` and `import tlc` work with the base pin alone.
 
 ## Step 3 — The UI fragment
 
