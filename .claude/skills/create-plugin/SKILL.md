@@ -115,7 +115,13 @@ reference.md exactly — in particular:
 Rewrite `src/<package>/ui.html` as one self-contained fragment (scoped `<style>` + markup +
 one IIFE `<script>`), following reference.md → UI:
 
-- Reach the host **only** through `window.PLUGIN_API` (`authFetch`, never bare `fetch`).
+- The page runs in a sandboxed frame on the compute service, not in the Hub's page
+  (reference.md → UI, "Where it runs"). Reach the host **only** through `window.PLUGIN_API`:
+  `authFetch` for your own routes (never bare `fetch` to the compute service),
+  `PLUGIN_API.navigate` to move the Hub, never `TlcApi`, `TlcAuth`, `window.top` or
+  `window.location.href`. Plain `fetch` to other sites' public APIs is fine.
+- Need more than your own routes (another plugin's routes, the person's name, the Hub's
+  address)? Declare it under `[ui] capabilities` in `plugin.toml`.
 - Style with the house CSS variables and shared classes (`.plugin-page-narrow`, `.card`,
   `.btn btn-primary`, `.plugin-hero`, …) — no hardcoded colors, works in dark mode.
 - If the plugin has jobs: start/track them with `window.PluginJobs` (inject

@@ -16,6 +16,7 @@ lives in the
 ## What's in the box
 
 ```
+├── AGENTS.md                 # the rules for coding agents building from this template
 ├── pyproject.toml            # one dist; your plugin's extra + entry point
 ├── catalog.json              # your shop listing — point it at your repo (see below)
 ├── jsconfig.json             # types for window.PLUGIN_API in ui.html
@@ -31,6 +32,17 @@ The plugin is `venv`-isolated: the host reads `plugin.toml` **without importing 
 provisions the plugin its own virtual environment, and runs it out-of-process behind a
 reverse proxy. Your dependencies live in your plugin's extra in
 [`pyproject.toml`](pyproject.toml) and never touch the host venv — pin anything you like.
+
+## Where your page runs
+
+The Hub shows `ui.html` in a sandboxed frame served by your compute service, never inside the
+Hub's own page, so a plugin cannot reach the Hub or the person's sign-in. For your page that
+means: talk to the Hub only through `window.PLUGIN_API` (`authFetch` for your routes,
+`navigate()` to move the Hub), never through Hub globals like `TlcApi` or `window.top`. Plain
+`fetch` to other sites, CDN scripts, `localStorage`, downloads and new windows all work. If the
+page needs more than its own routes, declare it under `[ui] capabilities` in `plugin.toml`. The
+details and a table of what works are in
+[`.claude/skills/create-plugin/reference.md`](.claude/skills/create-plugin/reference.md) (UI).
 
 ## Make it yours
 

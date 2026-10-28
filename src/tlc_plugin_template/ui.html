@@ -1,11 +1,14 @@
 <!--
   The plugin's UI: one self-contained HTML+CSS+JS fragment, served at
-  GET /api/plugins/template/ui and mounted into the Hub by the frontend.
+  GET /api/plugins/template/ui. The Hub shows it in a sandboxed frame served by the
+  compute service, so it cannot see the Hub's page, its globals or the sign-in.
 
-  Two rules make a fragment a good citizen:
+  Three rules make a fragment a good citizen:
   1. Reach the host ONLY through window.PLUGIN_API (typed via the repo-root
-     jsconfig.json — hover it in your editor).
-  2. Style with the house CSS variables (var(--text), var(--bg-card), ...) so the
+     jsconfig.json — hover it in your editor): authFetch for your routes,
+     navigate() to move the Hub. No TlcApi, window.top or location.href.
+  2. Need more than your own routes? Declare it under [ui] capabilities in plugin.toml.
+  3. Style with the house CSS variables (var(--text), var(--bg-card), ...) so the
      fragment matches the active theme, light and dark.
 -->
 <div class="template-plugin">
