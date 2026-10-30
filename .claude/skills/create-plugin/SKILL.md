@@ -1,7 +1,6 @@
 ---
 name: create-plugin
 description: Create a 3LC compute-service plugin from this template repo. Turns the template skeleton into a working plugin from a one-line description — package rename, manifest, behavior, UI, catalog. Use when the user asks to create or scaffold a plugin, e.g. "/create-plugin a plugin that shows class balance for a table".
-argument-hint: <what the plugin should do>
 ---
 
 # Create a 3LC compute-service plugin
@@ -117,15 +116,15 @@ one IIFE `<script>`), following reference.md → UI:
 
 - The page runs in a sandboxed frame on the compute service, not in the Hub's page
   (reference.md → UI, "Where it runs"). Reach the host **only** through `window.PLUGIN_API`:
-  `authFetch` for your own routes (never bare `fetch` to the compute service),
-  `PLUGIN_API.navigate` to move the Hub, never `TlcApi`, `TlcAuth`, `window.top` or
+  `compute.request` for your own routes (never bare `fetch` to the compute service),
+  `PLUGIN_API.nav.go` to move the Hub, never `TlcApi`, `TlcAuth`, `window.top` or
   `window.location.href`. Plain `fetch` to other sites' public APIs is fine.
 - Need more than your own routes (another plugin's routes, the person's name, the Hub's
   address)? Declare it under `[ui] capabilities` in `plugin.toml`.
 - Style with the house CSS variables and shared classes (`.plugin-page-narrow`, `.card`,
   `.btn btn-primary`, `.plugin-hero`, …) — no hardcoded colors, works in dark mode.
-- If the plugin has jobs: start/track them with `window.PluginJobs` (inject
-  `job_tracker_script()` via `inject_scripts()` in `get_ui_fragment()` — see reference.md).
+- If the plugin has jobs: use `PLUGIN_API.jobs`, automatically installed by the SDK runtime.
+  Register local cleanup with `lifecycle.onDispose`; never cancel remote jobs there.
 - Update the endpoint URLs and CSS class prefix from `template-` to the new id.
 
 ## Step 4 — Verify
@@ -164,3 +163,14 @@ curl -X POST http://localhost:5020/api/admin/plugins/dirs/reload \
 ```
 
 Flag anything left for them (e.g. catalog `source` URL if no git remote, GPU testing).
+
+## SDK 0.6.2 frame runtime
+
+Use the SDK [browser runtime guide](https://3lc-ai.github.io/3lc-compute-plugin-sdk/browser-runtime.html)
+and [agent guide](https://3lc-ai.github.io/3lc-compute-plugin-sdk/agent-guide.html).
+These pages publish with the SDK release; before release read the matching SDK branch sources.
+The host must serve the new runtime; upgrading only the plugin venv is insufficient.
+`PLUGIN_API.jobs` is installed by the runtime: new plugins do not inject a job tracker.
+Use namespaced helpers and register local cleanup with `lifecycle.onDispose`.
+Never cancel a running job on navigation, renewal failure, disconnect or disposal.
+Test explicit cancellation separately from viewer cleanup and recovery.

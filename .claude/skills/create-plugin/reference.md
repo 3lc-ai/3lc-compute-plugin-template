@@ -140,8 +140,8 @@ the whole Hub when your page asks for them. What that means in practice:
 
 | Works as usual | Does not work in the frame |
 |---|---|
-| Your own routes through `PLUGIN_API.authFetch` / `computeFetch` | Hub globals: `TlcApi`, `TlcAuth`, `TlcData`; anything on `window.top` / `window.parent` |
-| Plain `fetch` to other sites' public APIs, CDN `<script>` tags | `window.location.href = …` to change the Hub's page: use `PLUGIN_API.navigate('/path')` |
+| Your own routes through `PLUGIN_API.compute.request` / `computeFetch` | Hub globals: `TlcApi`, `TlcAuth`, `TlcData`; anything on `window.top` / `window.parent` |
+| Plain `fetch` to other sites' public APIs, CDN `<script>` tags | `window.location.href = …` to change the Hub's page: use `PLUGIN_API.nav.go('/path')` |
 | `localStorage`, `alert` / `confirm`, downloads, `window.open`, clipboard | Your compute's admin, settings or install routes, and another plugin's routes (refused) |
 | Charts, Socket.IO through `PLUGIN_API.libs.io`, `PluginJobs` | `position: fixed` overlays meant to cover the Hub: they cover your frame only |
 
@@ -170,24 +170,19 @@ var base = API.getConfig('compute_service_url');   // also: dashboard_url, objec
 API.context.resourceType;    // "table" | "run" | null (for action plugins)
 API.context.resourceUrls;    // selected resource URLs
 API.context.projectName;
-API.authFetch(url, opts);    // fetch with auth header; rejects non-ok with parsed detail
+API.compute.request(url, opts); // host-mediated request; credentials stay in the Hub
 API.showToast(msg, 'success'|'error'|'info');
-API.navigate('/projects');   // move the Hub to one of its own pages
+API.nav.go('/projects');   // move the Hub to one of its own pages
 API.libs.io;                 // Socket.IO client — the ONLY libs member that is stable;
                              // Chart / html2canvas / PptxGenJS / cytoscape are best-effort
 ```
 
-**Jobs from the UI.** Use `window.PluginJobs` — injected server-side in
-`get_ui_fragment()`:
-
-```python
-from tlc_plugin_sdk.shared.job_tracker import job_tracker_script
-from tlc_plugin_sdk.shared.ui_inject import inject_scripts
-return inject_scripts(_UI.read_text(encoding="utf-8"), job_tracker_script())
-```
+**Jobs from the UI.** Use `PLUGIN_API.jobs`, installed automatically before the
+fragment runs. Do not inject a second tracker. Register unsubscribers and local
+widget cleanup with `API.lifecycle.onDispose`; never cancel jobs on disposal.
 
 ```javascript
-PluginJobs.run('my-plugin', { table_url: url }, {
+API.jobs.run('my-plugin', { table_url: url }, {
   onUpdate: function (job) { /* job.status, job.progress.percent/label, job.metrics[] */ },
   onDone:   function (job) { /* job.run_url */ },
   onError:  function (job) { /* failure message rides job.subtitle */ },
@@ -223,7 +218,7 @@ separate `3lc` dep is needed. Everything resolves from public PyPI, no custom in
 ## Common mistakes
 
 - Metadata on the class or a `register()` call — the manifest is the only metadata source.
-- Bare `fetch()` to your compute service instead of `PLUGIN_API.authFetch()`.
+- Bare `fetch()` to your compute service instead of `PLUGIN_API.compute.request()`.
 - Reaching for Hub internals (`TlcApi`, `TlcAuth`, `window.top`) or setting
   `window.location.href`: the page runs in a frame; use `PLUGIN_API` and `PLUGIN_API.navigate`.
 - Calling compute routes outside your plugin without declaring them in `[ui] capabilities`.
@@ -247,3 +242,14 @@ curl "http://localhost:5020/api/plugins/<id>/compute?x=1"
 curl -X POST http://localhost:5020/api/admin/plugins/dirs/reload \
   -H 'Content-Type: application/json' -d '{"directory": "/path/to/repo/src"}'
 ```
+
+## SDK 0.6.2 frame runtime
+
+Use the SDK [browser runtime guide](https://3lc-ai.github.io/3lc-compute-plugin-sdk/browser-runtime.html)
+and [agent guide](https://3lc-ai.github.io/3lc-compute-plugin-sdk/agent-guide.html).
+These pages publish with the SDK release; before release read the matching SDK branch sources.
+The host must serve the new runtime; upgrading only the plugin venv is insufficient.
+`PLUGIN_API.jobs` is installed by the runtime: new plugins do not inject a job tracker.
+Use namespaced helpers and register local cleanup with `lifecycle.onDispose`.
+Never cancel a running job on navigation, renewal failure, disconnect or disposal.
+Test explicit cancellation separately from viewer cleanup and recovery.

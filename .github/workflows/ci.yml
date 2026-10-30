@@ -29,3 +29,10 @@ jobs:
 
       - name: Ruff format check
         run: uvx --from 'ruff>=0.15,<0.16' ruff format --check .
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Template UI behavior
+        run: node tests/ui.cjs

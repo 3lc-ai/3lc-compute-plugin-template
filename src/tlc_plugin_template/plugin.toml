@@ -8,7 +8,8 @@ name = "Template"
 description = "Bare-bones starting point for a 3LC compute-service plugin."
 version = "0.1.0"                     # SemVer; bump on every release
 icon = "✦"
-min_service_version = "0.1.0"
+min_service_version = "1.2"
+min_frontend_version = "1.2"
 
 [ui]
 display_mode = "sidebar"              # sidebar nav item, grouped under `section`
