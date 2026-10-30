@@ -1,11 +1,14 @@
 <!--
   The plugin's UI: one self-contained HTML+CSS+JS fragment, served at
-  GET /api/plugins/template/ui and mounted into the Hub by the frontend.
+  GET /api/plugins/template/ui. The Hub shows it in a sandboxed frame served by the
+  compute service, so it cannot see the Hub's page, its globals or the sign-in.
 
-  Two rules make a fragment a good citizen:
+  Three rules make a fragment a good citizen:
   1. Reach the host ONLY through window.PLUGIN_API (typed via the repo-root
-     jsconfig.json — hover it in your editor).
-  2. Style with the house CSS variables (var(--text), var(--bg-card), ...) so the
+     jsconfig.json â€” hover it in your editor): compute.request for your routes,
+     nav.go() to move the Hub. No TlcApi, window.top or location.href.
+  2. Need more than your own routes? Declare it under [ui] capabilities in plugin.toml.
+  3. Style with the house CSS variables (var(--text), var(--bg-card), ...) so the
      fragment matches the active theme, light and dark.
 -->
 <div class="template-plugin">
@@ -22,18 +25,33 @@
   <p>Replace everything you see with your own UI.</p>
 
   <button id="template-go">Call compute()</button>
-  <pre id="template-out">—</pre>
+  <pre id="template-out">â€”</pre>
 
   <script>
   (function () {
     var API = window.PLUGIN_API;
     var EL = document.currentScript.closest('.template-plugin');
-    var base = API.getConfig('compute_service_url');
-
-    EL.querySelector('#template-go').onclick = function () {
-      API.authFetch(base + '/api/plugins/template/compute?greeting=hi')
-        .then(function (r) { return r.json(); })
-        .then(function (j) { EL.querySelector('#template-out').textContent = JSON.stringify(j, null, 2); });
+    if (!API || !API.compute || typeof API.compute.request !== 'function' || !API.lifecycle) {
+      EL.querySelector('#template-out').textContent = 'Update your Compute service to use this plugin’s browser runtime.';
+      EL.querySelector('#template-go').disabled = true;
+      return;
+    }
+    var button = EL.querySelector('#template-go');
+    var output = EL.querySelector('#template-out');
+    var disposed = false;
+    API.lifecycle.onDispose(function () { disposed = true; button.onclick = null; });
+    button.onclick = async function () {
+      button.disabled = true;
+      output.textContent = 'Working…';
+      try {
+        var response = await API.compute.request('/api/plugins/template/compute?greeting=hi');
+        var result = await response.json();
+        if (!disposed) output.textContent = JSON.stringify(result, null, 2);
+      } catch (error) {
+        if (!disposed) output.textContent = error.message || 'The request failed.';
+      } finally {
+        if (!disposed) button.disabled = false;
+      }
     };
   })();
   </script>

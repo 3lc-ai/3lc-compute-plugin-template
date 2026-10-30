@@ -129,12 +129,40 @@ genuinely plugin-specific surface (config CRUD, metadata lookups, uploads, …).
 
 ## UI fragment (`ui.html`)
 
-One self-contained `<style>` + markup + `<script>` block, mounted into the Hub page.
-The same bytes serve host- and venv-isolated plugins.
+One self-contained `<style>` + markup + `<script>` block. The same bytes serve host- and
+venv-isolated plugins.
 
-**The bridge.** Reach the host only through `window.PLUGIN_API` — never bare `fetch`.
-It is typed: the repo-root `jsconfig.json` points the editor at `plugin-api.d.ts` inside
-the installed SDK wheel (run `uv sync` once and hover works). Key surface:
+**Where it runs.** The Hub shows your page in a sandboxed frame served by your compute
+service, not inside the Hub's own page. The browser walls the two apart: your page cannot see
+the Hub's page, its variables (`TlcApi`, `TlcAuth`, …) or the person's sign-in, and it never
+holds a token. The Hub's dialogs (table picker, stop job, Connection chooser) still open over
+the whole Hub when your page asks for them. What that means in practice:
+
+| Works as usual | Does not work in the frame |
+|---|---|
+| Your own routes through `PLUGIN_API.compute.request` / `computeFetch` | Hub globals: `TlcApi`, `TlcAuth`, `TlcData`; anything on `window.top` / `window.parent` |
+| Plain `fetch` to other sites' public APIs, CDN `<script>` tags | `window.location.href = …` to change the Hub's page: use `PLUGIN_API.nav.go('/path')` |
+| `localStorage`, `alert` / `confirm`, downloads, `window.open`, clipboard | Your compute's admin, settings or install routes, and another plugin's routes (refused) |
+| Charts, Socket.IO through `PLUGIN_API.libs.io`, `PluginJobs` | `position: fixed` overlays meant to cover the Hub: they cover your frame only |
+
+`localStorage` is per compute service, shared by every plugin on it: keep secrets out of it.
+A refused call rejects with an error that names the route or member; read the browser console.
+
+**Asking for more.** A page gets its own `/api/plugins/<id>/…` routes and the read routes the
+SDK helpers use. Anything beyond that is declared in `plugin.toml` and granted by the Hub:
+
+```toml
+[ui]
+capabilities = ["history", "identity:name", "calls:other-plugin-id"]
+# history: keep your page's own query and #hash in the Hub's address (PLUGIN_API.nav.state)
+# identity:name: the signed-in person's display name (PLUGIN_API.identity.name())
+# calls:<id>: call another plugin's routes on the same compute service
+```
+
+**The bridge.** Reach the host only through `window.PLUGIN_API`; for your compute service, never
+bare `fetch` (it carries no sign-in, so the call is refused). It is typed: the repo-root
+`jsconfig.json` points the editor at `plugin-api.d.ts` inside the installed SDK wheel (run
+`uv sync` once and hover works). Key surface:
 
 ```javascript
 var API = window.PLUGIN_API;
@@ -142,23 +170,19 @@ var base = API.getConfig('compute_service_url');   // also: dashboard_url, objec
 API.context.resourceType;    // "table" | "run" | null (for action plugins)
 API.context.resourceUrls;    // selected resource URLs
 API.context.projectName;
-API.authFetch(url, opts);    // fetch with auth header; rejects non-ok with parsed detail
+API.compute.request(url, opts); // host-mediated request; credentials stay in the Hub
 API.showToast(msg, 'success'|'error'|'info');
+API.nav.go('/projects');   // move the Hub to one of its own pages
 API.libs.io;                 // Socket.IO client — the ONLY libs member that is stable;
                              // Chart / html2canvas / PptxGenJS / cytoscape are best-effort
 ```
 
-**Jobs from the UI.** Use `window.PluginJobs` — injected server-side in
-`get_ui_fragment()`:
-
-```python
-from tlc_plugin_sdk.shared.job_tracker import job_tracker_script
-from tlc_plugin_sdk.shared.ui_inject import inject_scripts
-return inject_scripts(_UI.read_text(encoding="utf-8"), job_tracker_script())
-```
+**Jobs from the UI.** Use `PLUGIN_API.jobs`, installed automatically before the
+fragment runs. Do not inject a second tracker. Register unsubscribers and local
+widget cleanup with `API.lifecycle.onDispose`; never cancel jobs on disposal.
 
 ```javascript
-PluginJobs.run('my-plugin', { table_url: url }, {
+API.jobs.run('my-plugin', { table_url: url }, {
   onUpdate: function (job) { /* job.status, job.progress.percent/label, job.metrics[] */ },
   onDone:   function (job) { /* job.run_url */ },
   onError:  function (job) { /* failure message rides job.subtitle */ },
@@ -194,7 +218,10 @@ separate `3lc` dep is needed. Everything resolves from public PyPI, no custom in
 ## Common mistakes
 
 - Metadata on the class or a `register()` call — the manifest is the only metadata source.
-- Bare `fetch()` in the UI instead of `PLUGIN_API.authFetch()`.
+- Bare `fetch()` to your compute service instead of `PLUGIN_API.compute.request()`.
+- Reaching for Hub internals (`TlcApi`, `TlcAuth`, `window.top`) or setting
+  `window.location.href`: the page runs in a frame; use `PLUGIN_API` and `PLUGIN_API.navigate`.
+- Calling compute routes outside your plugin without declaring them in `[ui] capabilities`.
 - Hardcoded colors / broken dark mode.
 - Hand-rolled job queue, job store, cancel route, or `get_active_jobs` — all host-owned.
 - `async def run_job` — it runs synchronously on a worker thread; poll `ctx.cancelled`.
@@ -215,3 +242,14 @@ curl "http://localhost:5020/api/plugins/<id>/compute?x=1"
 curl -X POST http://localhost:5020/api/admin/plugins/dirs/reload \
   -H 'Content-Type: application/json' -d '{"directory": "/path/to/repo/src"}'
 ```
+
+## SDK 0.6.2 frame runtime
+
+Use the SDK [browser runtime guide](https://3lc-ai.github.io/3lc-compute-plugin-sdk/browser-runtime.html)
+and [agent guide](https://3lc-ai.github.io/3lc-compute-plugin-sdk/agent-guide.html).
+These pages publish with the SDK release; before release read the matching SDK branch sources.
+The host must serve the new runtime; upgrading only the plugin venv is insufficient.
+`PLUGIN_API.jobs` is installed by the runtime: new plugins do not inject a job tracker.
+Use namespaced helpers and register local cleanup with `lifecycle.onDispose`.
+Never cancel a running job on navigation, renewal failure, disconnect or disposal.
+Test explicit cancellation separately from viewer cleanup and recovery.
