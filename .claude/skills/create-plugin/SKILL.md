@@ -41,7 +41,9 @@ Also decide, from the prompt, which contract surfaces the plugin needs:
 
 - **`compute(params)` only** — quick synchronous request/response (analysis, lookups). Default.
 - **`run_job(ctx)`** — anything long-running (training, inference, imports, multi-step work
-  with progress). Set `requires_gpu = true` in the manifest only if it genuinely needs a GPU.
+  with progress). Set `requires_gpu = true` in the manifest only if it genuinely needs a GPU;
+  `remote_capable = true` if a run may go to a remote node without one. Name the run-body
+  keys that carry data under `data_inputs` / `data_outputs`.
 - **`get_route_handlers()`** — POST bodies, multiple endpoints, config CRUD, file uploads.
 - **deps** — whatever the plugin imports beyond the SDK goes in the plugin's extra in
   `pyproject.toml`, never in base `dependencies`.
@@ -84,15 +86,20 @@ surrounding documentation — the comments are part of the template's teaching s
 2. **`src/<package>/plugin.toml`** — set `id`, `name`, `description`, `icon`,
    `runtime.entrypoint = "<package>:<Class>"`, `runtime.provision_extra = "<extra>"`.
    Choose `[ui]` `display_mode` / `section` / `compatible_with` to fit the plugin
-   (see reference.md → Manifest). Add `requires_gpu = true` under `[runtime]` if needed.
+   (see reference.md → Manifest). Add `requires_gpu = true`, `remote_capable = true`,
+   `data_inputs` / `data_outputs` under `[runtime]` as needed; set `min_frontend_version =
+   "1.2.0"` only when the UI uses `<tlc-table-field>`, `TlcPicker` or `showResult`.
 3. **`pyproject.toml`** — project `name` = dist name; description; rename the extra under
    `[project.optional-dependencies]` (and put the plugin's deps in it); the entry point under
    `[project.entry-points."tlc_compute.plugins"]` (`<extra> = "<package>"`); the package path
    under `[tool.hatch.build.targets.wheel]`.
-4. **`catalog.json`** — `id`, `source` (`<dist>[<extra>] @ git+<repo-url>@main` — get the
-   repo URL from `git remote get-url origin`; if there is no remote, leave the template URL
-   and flag it in your final report), and the `manifest` object mirrors `plugin.toml`.
-5. **`README.md`** — retitle for the new plugin; keep the run/dev-loop/catalog sections,
+4. **`catalog.json`** — `id`, `latest`, `source` (`<dist>[<extra>] @ git+<repo-url>@main` —
+   get the repo URL from `git remote get-url origin`; if there is no remote, leave the
+   template URL and flag it in your final report), and the `manifest` object mirrors
+   `plugin.toml`.
+5. **`tests/test_plugin.py`** — the package folder in `PLUGIN_DIR` and the root class the
+   fragment test looks for; then grow it (reference.md → Testing).
+6. **`README.md`** — retitle for the new plugin; keep the run/dev-loop/catalog sections,
    updated with the new names.
 
 ## Step 2 — Implement the behavior
@@ -104,7 +111,9 @@ reference.md exactly — in particular:
 - Metadata lives only in `plugin.toml`; the class carries behavior only (no `register()`,
   no metadata attributes).
 - `run_job(ctx)` is synchronous, talks only to `ctx`, and polls `ctx.cancelled` at
-  checkpoints. Never hand-roll a queue, job store, or cancel route — the host owns those.
+  checkpoints; bad input is `ctx.fail("sentence")`; a table or run it creates goes under
+  `ctx.project_root_url`. Never hand-roll a queue, job store, or cancel route — the host
+  owns those.
 - Custom routes are bare relative `@get`/`@post` Litestar handlers in a `routes.py`
   (`sync_to_thread=True` for blocking work), returned from `get_route_handlers()`.
 - Data access goes through the `tlc` SDK server-side; the plugin SDK brings `tlc` with it, so
@@ -117,9 +126,11 @@ one IIFE `<script>`), following reference.md → UI:
 
 - Reach the host **only** through `window.PLUGIN_API` (`authFetch`, never bare `fetch`).
 - Style with the house CSS variables and shared classes (`.plugin-page-narrow`, `.card`,
-  `.btn btn-primary`, `.plugin-hero`, …) — no hardcoded colors, works in dark mode.
-- If the plugin has jobs: start/track them with `window.PluginJobs` (inject
-  `job_tracker_script()` via `inject_scripts()` in `get_ui_fragment()` — see reference.md).
+  `.btn btn-primary`, `.form-select`, `.plugin-hero`, …) — no hardcoded colors, no button
+  styles of your own, every rule of your own scoped under `.<id>-…`, works in dark mode.
+- If the plugin has jobs: start/track them with `window.PluginJobs` (already on every page;
+  keep the job id from `run()`'s answer, read failures from `job.error` — see reference.md).
+- A table input is `<tlc-table-field>`; a file or folder is the SDK's data-source picker.
 - Update the endpoint URLs and CSS class prefix from `template-` to the new id.
 
 ## Step 4 — Verify
@@ -128,7 +139,8 @@ one IIFE `<script>`), following reference.md → UI:
 uvx --from 'ruff>=0.15,<0.16' ruff format .
 uvx --from 'ruff>=0.15,<0.16' ruff check .
 uv sync --extra <extra>          # resolves the venv; proves deps + extra wiring
-uv run python -c "from <package> import <Class>; p = <Class>(); print(type(p.get_ui_fragment()))"
+uv run pytest -q                 # the plugin in-process through the SDK harness + the UI lint
+uv run python -m tlc_plugin_sdk.lint src/   # the findings in full, if the lint test fails
 ```
 
 Also confirm `plugin.toml` parses and agrees with the code:

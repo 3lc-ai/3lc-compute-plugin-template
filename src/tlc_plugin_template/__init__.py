@@ -11,8 +11,13 @@ behavior. The two methods below are the whole required contract:
 
 Everything else is optional. When you outgrow this skeleton, the example plugin
 (https://github.com/3lc-ai/3lc-compute-plugin-example) shows the full surface:
-``run_job(ctx)`` for long jobs with progress and cancellation,
-``get_route_handlers()`` for custom REST routes, and the runtime lifecycle hooks.
+``run_job(ctx)`` for long jobs with progress, a clean failure and cancellation,
+``get_route_handlers()`` for custom REST routes, the shared data-source picker, and the
+runtime lifecycle hooks. ``ComputePlugin`` is the base for a plugin that runs jobs; its
+parent ``HubPlugin`` (fragment, ``compute``, routes) is enough for one that never will.
+
+``tests/test_plugin.py`` runs this plugin in-process through ``tlc_plugin_sdk.harness``
+and checks the fragment with ``tlc_plugin_sdk.lint`` — no compute service needed.
 """
 
 from __future__ import annotations
@@ -32,7 +37,11 @@ class TemplatePlugin(ComputePlugin):
     id: str
 
     def get_ui_fragment(self) -> str:
-        """Return the fragment served at ``GET /api/plugins/template/ui``."""
+        """Return the fragment served at ``GET /api/plugins/template/ui``.
+
+        The worker adds the ``window.PluginJobs`` client to every fragment; inject other SDK
+        scripts (the data-source picker, the preset bar) with ``inject_scripts`` here.
+        """
         return _UI.read_text(encoding="utf-8")
 
     def compute(self, params: dict[str, Any]) -> dict[str, Any]:

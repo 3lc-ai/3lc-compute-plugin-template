@@ -8,14 +8,18 @@ name = "Template"
 description = "Bare-bones starting point for a 3LC compute-service plugin."
 version = "0.1.0"                     # SemVer; bump on every release
 icon = "✦"
-min_service_version = "0.1.0"
+min_service_version = "1.2.0"         # Compute 1.2 implements the SDK 0.6 line this plugin pins (pyproject.toml)
+# min_frontend_version = "1.2.0"      # only when ui.html needs a Hub 1.2 feature (<tlc-table-field>, TlcPicker, showResult)
 
 [ui]
-display_mode = "sidebar"              # sidebar nav item, grouped under `section`
+display_mode = "sidebar"              # sidebar nav item, grouped under `section`; "action" = a button on table/run pages
 section = "Examples"
 compatible_with = ["table"]
 
 [runtime]
-isolation = "venv"                    # runs out-of-process in this plugin's own venv (the way)
-entrypoint = "tlc_plugin_template:TemplatePlugin"   # module:Class the host instantiates
+entrypoint = "tlc_plugin_template:TemplatePlugin"   # module:Class the host instantiates, in the plugin's own venv
 provision_extra = "template"          # this plugin's extra in the repo-root pyproject.toml
+# requires_gpu = true                 # run_job needs a GPU: the job goes through the shared GPU queue
+# remote_capable = true               # a run may target a remote node the Hub manages, GPU or not
+# data_inputs = ["folder"]            # run-body keys carrying data the run reads; the host plans them for the run target
+# data_outputs = ["output_path"]      # … and the places it writes (never the project root: the host stamps that)
