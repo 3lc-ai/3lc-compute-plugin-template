@@ -76,4 +76,4 @@ explicit = true
 
 [tool.uv.sources]
 "3lc" = { index = "staging" }
-3lc-compute-plugin-sdk = { git = "https://github.com/3lc-ai/3lc-compute-plugin-sdk", rev = "abac1cb3b460b4a524cbf97a08e331d3aba8b5a2" }
+3lc-compute-plugin-sdk = { git = "https://github.com/3lc-ai/3lc-compute-plugin-sdk", rev = "04a3b0d274d5df6551628ebce3d9f8de056abd31" }
