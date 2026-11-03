@@ -12,6 +12,9 @@ min_service_version = "1.2"
 min_frontend_version = "1.2"
 
 [ui]
+# The page runs only in the isolated plugin frame: a compute service that does not serve this protocol
+# marks this version incompatible, and its catalog offers the last one that runs there.
+frame_protocol = 1
 display_mode = "sidebar"              # sidebar nav item, grouped under `section`
 section = "Examples"
 compatible_with = ["table"]

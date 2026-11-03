@@ -15,7 +15,7 @@ build-backend = "hatchling.build"
 name = "3lc-compute-plugin-template"
 version = "0.1.0"
 description = "Template plugin for the 3LC compute service (venv-isolated)."
-requires-python = ">=3.10,<3.15"
+requires-python = ">=3.11,<3.15"
 # Apache-2.0, matching 3lc-compute-plugin-sdk. Full text in ./LICENSE.
 license = { text = "Apache-2.0" }
 classifiers = ["License :: OSI Approved :: Apache Software License"]
@@ -76,4 +76,4 @@ explicit = true
 
 [tool.uv.sources]
 "3lc" = { index = "staging" }
-3lc-compute-plugin-sdk = { git = "https://github.com/3lc-ai/3lc-compute-plugin-sdk", rev = "cca93ce6a29c05ce6c4a328cf9f0c77fd6da2893" }
+3lc-compute-plugin-sdk = { git = "https://github.com/3lc-ai/3lc-compute-plugin-sdk", rev = "a0d9ae17531a3ef0c09d064d5bf9c430cf1d20d1" }
