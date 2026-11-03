@@ -75,7 +75,7 @@ pandas = [
 [[package]]
 name = "3lc-compute-plugin-sdk"
 version = "0.7.0"
-source = { git = "https://github.com/3lc-ai/3lc-compute-plugin-sdk?rev=a0d9ae17531a3ef0c09d064d5bf9c430cf1d20d1#a0d9ae17531a3ef0c09d064d5bf9c430cf1d20d1" }
+source = { git = "https://github.com/3lc-ai/3lc-compute-plugin-sdk?rev=ba0af88f7cf6accbee1b33ad3bc49e5e8b667943#ba0af88f7cf6accbee1b33ad3bc49e5e8b667943" }
 dependencies = [
     { name = "3lc", extra = ["pandas"] },
     { name = "litestar" },
@@ -97,7 +97,7 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "3lc-compute-plugin-sdk", git = "https://github.com/3lc-ai/3lc-compute-plugin-sdk?rev=a0d9ae17531a3ef0c09d064d5bf9c430cf1d20d1" }]
+requires-dist = [{ name = "3lc-compute-plugin-sdk", git = "https://github.com/3lc-ai/3lc-compute-plugin-sdk?rev=ba0af88f7cf6accbee1b33ad3bc49e5e8b667943" }]
 provides-extras = ["template"]
 
 [package.metadata.requires-dev]
