@@ -37,7 +37,7 @@ reverse proxy. Your dependencies live in your plugin's extra in
 
 The Hub shows `ui.html` in a sandboxed frame served by your compute service, never inside the
 Hub's own page, so a plugin cannot reach the Hub or the person's sign-in. For your page that
-means: talk to the Hub only through `window.PLUGIN_API` (`compute.request` for your routes,
+means: talk to the Hub only through `window.PLUGIN_API` (`http.request` for your routes,
 `navigate()` to move the Hub), never through Hub globals like `TlcApi` or `window.top`. Plain
 `fetch` to other sites, CDN scripts, `localStorage`, downloads and new windows all work. If the
 page needs more than its own routes, declare it under `[ui] capabilities` in `plugin.toml`. The
@@ -147,7 +147,7 @@ curl -X POST http://localhost:5020/api/admin/plugins/catalogs \
 Apache-2.0 — see [LICENSE](LICENSE). Repos generated from this template are yours to
 license as you wish.
 
-## SDK 0.6.2 frame runtime
+## SDK 0.7.0 frame runtime
 
 Use the SDK [browser runtime guide](https://3lc-ai.github.io/3lc-compute-plugin-sdk/browser-runtime.html)
 and [agent guide](https://3lc-ai.github.io/3lc-compute-plugin-sdk/agent-guide.html).

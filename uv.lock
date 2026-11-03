@@ -153,8 +153,8 @@ pandas = [
 
 [[package]]
 name = "3lc-compute-plugin-sdk"
-version = "0.6.2"
-source = { git = "https://github.com/3lc-ai/3lc-compute-plugin-sdk?rev=f617adb22794d761536c45cbb9c8fd8a5ee75a03#f617adb22794d761536c45cbb9c8fd8a5ee75a03" }
+version = "0.7.0"
+source = { git = "https://github.com/3lc-ai/3lc-compute-plugin-sdk?rev=cca93ce6a29c05ce6c4a328cf9f0c77fd6da2893#cca93ce6a29c05ce6c4a328cf9f0c77fd6da2893" }
 dependencies = [
     { name = "3lc", version = "3.5.0.dev149866", source = { registry = "https://pypi.3lc.ai/repositories/prereleases/" }, extra = ["pandas"], marker = "python_full_version < '3.11'" },
     { name = "3lc", version = "3.5.0.dev154037", source = { registry = "https://pypi.3lc.ai/repositories/prereleases/" }, extra = ["pandas"], marker = "python_full_version >= '3.11'" },
@@ -178,7 +178,7 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "3lc-compute-plugin-sdk", git = "https://github.com/3lc-ai/3lc-compute-plugin-sdk?rev=f617adb22794d761536c45cbb9c8fd8a5ee75a03" }]
+requires-dist = [{ name = "3lc-compute-plugin-sdk", git = "https://github.com/3lc-ai/3lc-compute-plugin-sdk?rev=cca93ce6a29c05ce6c4a328cf9f0c77fd6da2893" }]
 provides-extras = ["template"]
 
 [package.metadata.requires-dev]

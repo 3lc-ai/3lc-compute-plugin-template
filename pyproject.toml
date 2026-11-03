@@ -24,7 +24,7 @@ classifiers = ["License :: OSI Approved :: Apache Software License"]
 # `tlc_plugin_sdk.shared.*` helpers with it — no separate `3lc` dep is needed. Everything resolves
 # from the source/index configuration below during this development migration.
 dependencies = [
-    "3lc-compute-plugin-sdk>=0.6.2,<0.7.0",
+    "3lc-compute-plugin-sdk>=0.7.0,<0.8.0",
 ]
 
 # Per-plugin extras — installed ONLY into that plugin's provisioned venv. Provisioning opts into
@@ -76,4 +76,4 @@ explicit = true
 
 [tool.uv.sources]
 "3lc" = { index = "staging" }
-3lc-compute-plugin-sdk = { git = "https://github.com/3lc-ai/3lc-compute-plugin-sdk", rev = "f617adb22794d761536c45cbb9c8fd8a5ee75a03" }
+3lc-compute-plugin-sdk = { git = "https://github.com/3lc-ai/3lc-compute-plugin-sdk", rev = "cca93ce6a29c05ce6c4a328cf9f0c77fd6da2893" }

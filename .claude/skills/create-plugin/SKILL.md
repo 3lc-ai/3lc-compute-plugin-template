@@ -116,7 +116,7 @@ one IIFE `<script>`), following reference.md → UI:
 
 - The page runs in a sandboxed frame on the compute service, not in the Hub's page
   (reference.md → UI, "Where it runs"). Reach the host **only** through `window.PLUGIN_API`:
-  `compute.request` for your own routes (never bare `fetch` to the compute service),
+  `http.request` for your own routes (never bare `fetch` to the compute service),
   `PLUGIN_API.nav.go` to move the Hub, never `TlcApi`, `TlcAuth`, `window.top` or
   `window.location.href`. Plain `fetch` to other sites' public APIs is fine.
 - Need more than your own routes (another plugin's routes, the person's name, the Hub's
@@ -164,7 +164,7 @@ curl -X POST http://localhost:5020/api/admin/plugins/dirs/reload \
 
 Flag anything left for them (e.g. catalog `source` URL if no git remote, GPU testing).
 
-## SDK 0.6.2 frame runtime
+## SDK 0.7.0 frame runtime
 
 Use the SDK [browser runtime guide](https://3lc-ai.github.io/3lc-compute-plugin-sdk/browser-runtime.html)
 and [agent guide](https://3lc-ai.github.io/3lc-compute-plugin-sdk/agent-guide.html).

@@ -11,7 +11,7 @@ it, and the full one in the
 The Hub shows the page in a sandboxed frame served by the compute service, not inside the Hub's
 own page. Code that reaches past the frame fails at run time, so:
 
-- Talk to the Hub only through `window.PLUGIN_API`. Use `PLUGIN_API.compute.request` for the
+- Talk to the Hub only through `window.PLUGIN_API`. Use `PLUGIN_API.http.request` for the
   plugin's own routes; a bare `fetch` to the compute service carries no sign-in and is refused.
 - Move the Hub with `PLUGIN_API.nav.go('/path')`, never `window.location.href`.
 - Never use `TlcApi`, `TlcAuth`, `TlcData`, `window.top` or `window.parent`: they do not exist
@@ -27,7 +27,7 @@ own page. Code that reaches past the frame fails at run time, so:
 
 A refused call rejects with an error naming the route or member; check the browser console.
 
-## SDK 0.6.2 frame runtime
+## SDK 0.7.0 frame runtime
 
 Use the SDK [browser runtime guide](https://3lc-ai.github.io/3lc-compute-plugin-sdk/browser-runtime.html)
 and [agent guide](https://3lc-ai.github.io/3lc-compute-plugin-sdk/agent-guide.html).

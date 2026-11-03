@@ -5,7 +5,7 @@
 
   Three rules make a fragment a good citizen:
   1. Reach the host ONLY through window.PLUGIN_API (typed via the repo-root
-     jsconfig.json â€” hover it in your editor): compute.request for your routes,
+     jsconfig.json; hover it in your editor): http.request for your routes,
      nav.go() to move the Hub. No TlcApi, window.top or location.href.
   2. Need more than your own routes? Declare it under [ui] capabilities in plugin.toml.
   3. Style with the house CSS variables (var(--text), var(--bg-card), ...) so the
@@ -25,14 +25,15 @@
   <p>Replace everything you see with your own UI.</p>
 
   <button id="template-go">Call compute()</button>
-  <pre id="template-out">â€”</pre>
+  <pre id="template-out">-</pre>
 
   <script>
   (function () {
     var API = window.PLUGIN_API;
     var EL = document.currentScript.closest('.template-plugin');
-    if (!API || !API.compute || typeof API.compute.request !== 'function' || !API.lifecycle) {
-      EL.querySelector('#template-out').textContent = 'Update your Compute service to use this plugin’s browser runtime.';
+    // The isolated plugin frame (PLUGIN_API.protocol): a Hub that shows plugin pages inline has no http.request.
+    if (!API || !API.protocol || !API.http || typeof API.http.request !== 'function') {
+      EL.querySelector('#template-out').textContent = 'This plugin needs a newer 3LC Hub, one that opens plugin pages in their own frame.';
       EL.querySelector('#template-go').disabled = true;
       return;
     }
@@ -44,7 +45,7 @@
       button.disabled = true;
       output.textContent = 'Working…';
       try {
-        var response = await API.compute.request('/api/plugins/template/compute?greeting=hi');
+        var response = await API.http.request('/api/plugins/template/compute?greeting=hi');
         var result = await response.json();
         if (!disposed) output.textContent = JSON.stringify(result, null, 2);
       } catch (error) {

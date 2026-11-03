@@ -7,7 +7,7 @@ const html = fs.readFileSync(new URL('../src/tlc_plugin_template/ui.html', 'file
 const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
 async function test() {
   const button = {}, output = {}, callbacks = []; let respond;
-  const API = {lifecycle:{onDispose: fn => callbacks.push(fn)}, compute:{request: path => {
+  const API = {protocol: 1, lifecycle:{onDispose: fn => callbacks.push(fn)}, http:{request: path => {
     assert.equal(path, '/api/plugins/template/compute?greeting=hi');
     return new Promise((resolve,reject) => {respond = {resolve,reject};});
   }}};
@@ -23,7 +23,7 @@ async function test() {
   respond.resolve({json: async () => ({message:'late'})}); await pending;
   assert.equal(button.onclick, null); assert.equal(output.textContent, before);
   vm.runInNewContext(source, {window:{PLUGIN_API:{}}, document:{currentScript:{closest: () => EL}}});
-  assert.equal(button.disabled, true); assert.match(output.textContent, /Update your Compute/);
+  assert.equal(button.disabled, true); assert.match(output.textContent, /needs a newer 3LC Hub/);
   console.log('template success, error, disposal and older-host fallback tests passed');
 }
 test().catch(error => {console.error(error); process.exitCode=1;});

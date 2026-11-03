@@ -140,7 +140,7 @@ the whole Hub when your page asks for them. What that means in practice:
 
 | Works as usual | Does not work in the frame |
 |---|---|
-| Your own routes through `PLUGIN_API.compute.request` / `computeFetch` | Hub globals: `TlcApi`, `TlcAuth`, `TlcData`; anything on `window.top` / `window.parent` |
+| Your own routes through `PLUGIN_API.http.request` / `computeFetch` | Hub globals: `TlcApi`, `TlcAuth`, `TlcData`; anything on `window.top` / `window.parent` |
 | Plain `fetch` to other sites' public APIs, CDN `<script>` tags | `window.location.href = …` to change the Hub's page: use `PLUGIN_API.nav.go('/path')` |
 | `localStorage`, `alert` / `confirm`, downloads, `window.open`, clipboard | Your compute's admin, settings or install routes, and another plugin's routes (refused) |
 | Charts, Socket.IO through `PLUGIN_API.libs.io`, `PluginJobs` | `position: fixed` overlays meant to cover the Hub: they cover your frame only |
@@ -170,7 +170,7 @@ var base = API.getConfig('compute_service_url');   // also: dashboard_url, objec
 API.context.resourceType;    // "table" | "run" | null (for action plugins)
 API.context.resourceUrls;    // selected resource URLs
 API.context.projectName;
-API.compute.request(url, opts); // host-mediated request; credentials stay in the Hub
+API.http.request(url, opts); // host-mediated request; credentials stay in the Hub
 API.showToast(msg, 'success'|'error'|'info');
 API.nav.go('/projects');   // move the Hub to one of its own pages
 API.libs.io;                 // Socket.IO client — the ONLY libs member that is stable;
@@ -218,7 +218,7 @@ separate `3lc` dep is needed. Everything resolves from public PyPI, no custom in
 ## Common mistakes
 
 - Metadata on the class or a `register()` call — the manifest is the only metadata source.
-- Bare `fetch()` to your compute service instead of `PLUGIN_API.compute.request()`.
+- Bare `fetch()` to your compute service instead of `PLUGIN_API.http.request()`.
 - Reaching for Hub internals (`TlcApi`, `TlcAuth`, `window.top`) or setting
   `window.location.href`: the page runs in a frame; use `PLUGIN_API` and `PLUGIN_API.navigate`.
 - Calling compute routes outside your plugin without declaring them in `[ui] capabilities`.
@@ -243,7 +243,7 @@ curl -X POST http://localhost:5020/api/admin/plugins/dirs/reload \
   -H 'Content-Type: application/json' -d '{"directory": "/path/to/repo/src"}'
 ```
 
-## SDK 0.6.2 frame runtime
+## SDK 0.7.0 frame runtime
 
 Use the SDK [browser runtime guide](https://3lc-ai.github.io/3lc-compute-plugin-sdk/browser-runtime.html)
 and [agent guide](https://3lc-ai.github.io/3lc-compute-plugin-sdk/agent-guide.html).
