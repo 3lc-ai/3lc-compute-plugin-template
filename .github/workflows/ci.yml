@@ -5,6 +5,7 @@ on:
     branches: [main]
   push:
     branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -36,3 +37,23 @@ jobs:
 
       - name: Template UI behavior
         run: node tests/ui.cjs
+
+  test:
+    name: lockfile, tests and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.13.6"
+
+      - name: Lockfile is up to date
+        run: uv lock --check
+
+      - name: Tests
+        run: uv run --locked pytest
+
+      - name: Build
+        run: uv build
