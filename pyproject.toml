@@ -49,7 +49,7 @@ packages = [
 # standalone (uvx) — linting must not require resolving any dependency stack.
 [tool.ruff]
 line-length = 120
-target-version = "py310"
+target-version = "py311"
 exclude = [".git", ".mypy_cache", ".ruff_cache", ".venv", "build", "dist"]
 
 [tool.ruff.lint]
@@ -67,7 +67,7 @@ docstring-code-format = true
 # consumer release requiring an unavailable SDK. The staged core source must be
 # declared by each consuming project because uv sources are not transitive.
 [dependency-groups]
-dev = ["3lc>=3.5.0.dev149866,<4.0.0"]
+dev = ["3lc>=3.5.0.dev149866,<4.0.0", "pytest>=8"]
 
 [[tool.uv.index]]
 name = "staging"

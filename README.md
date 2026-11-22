@@ -5,6 +5,9 @@ This is a **GitHub template repository**: click **Use this template** (top right
 a fresh repo — your name, your history — containing the smallest viable plugin, ready to
 rename and grow. Nothing in it is scaffolding you delete; everything is something you edit.
 
+> Until 3lc 3.5 and `3lc-compute-plugin-sdk` 0.7.0 are on PyPI, installing this template
+> (`uv sync`) needs internal 3LC access to their staging index.
+
 Want to see what a plugin can *do* first? The example plugin,
 [**Mission Control**](https://github.com/3lc-ai/3lc-compute-plugin-example), is a runnable
 tour of the whole contract — jobs with live progress and abort, custom REST routes, the
@@ -20,7 +23,8 @@ lives in the
 ├── pyproject.toml            # one dist; your plugin's extra + entry point
 ├── catalog.json              # your shop listing — point it at your repo (see below)
 ├── jsconfig.json             # types for window.PLUGIN_API in ui.html
-├── .github/workflows/ci.yml  # ruff lint + format, standalone
+├── .github/workflows/ci.yml  # ruff, the tests, the lockfile and the build
+├── .github/workflows/release.yml  # publishes to PyPI on a vX.Y.Z tag
 └── src/
     └── tlc_plugin_template/  # ← rename me
         ├── plugin.toml       #    manifest (metadata; read without import)
@@ -38,7 +42,7 @@ reverse proxy. Your dependencies live in your plugin's extra in
 The Hub shows `ui.html` in a sandboxed frame served by your compute service, never inside the
 Hub's own page, so a plugin cannot reach the Hub or the person's sign-in. For your page that
 means: talk to the Hub only through `window.PLUGIN_API` (`http.request` for your routes,
-`navigate()` to move the Hub), never through Hub globals like `TlcApi` or `window.top`. Plain
+`nav.go()` to move the Hub), never through Hub globals like `TlcApi` or `window.top`. Plain
 `fetch` to other sites, CDN scripts, `localStorage`, downloads and new windows all work. If the
 page needs more than its own routes, declare it under `[ui] capabilities` in `plugin.toml`. The
 details and a table of what works are in
@@ -66,6 +70,8 @@ Doing it by hand: after **Use this template**, four renames:
    package path under `[tool.hatch.build.targets.wheel]`.
 4. **The catalog.** In [`catalog.json`](catalog.json): `id`, the manifest copy, and the
    `source` — point it at *your* repo (see below).
+
+Run `uv lock` after the renames: the dist name changed, and CI checks the lockfile.
 
 Then fill in the class: `compute()` and `get_ui_fragment()` are the whole required contract;
 grow into `run_job(ctx)` and `get_route_handlers()` by cribbing from
@@ -141,6 +147,20 @@ curl -X POST http://localhost:5020/api/admin/plugins/catalogs \
   -H 'Content-Type: application/json' \
   -d '{"url": "https://raw.githubusercontent.com/you/your-repo/main/catalog.json", "persist": true}'
 ```
+
+## Publish to PyPI
+
+[`release.yml`](.github/workflows/release.yml) publishes your plugin when you push a `vX.Y.Z`
+tag, never from this template repo. Set it up once:
+
+1. On PyPI, add a [trusted publisher](https://docs.pypi.org/trusted-publishers/) for your
+   project: your GitHub owner and repository, workflow `release.yml`, environment `pypi`.
+2. In your GitHub repository's settings, create an environment named `pypi`.
+
+To release, set the new `version` in `pyproject.toml` and `plugin.toml`, list it in
+`catalog.json` (the tests check all three agree), then push the tag:
+`git tag v0.2.0 && git push origin v0.2.0`. Running the workflow by hand (Actions → Release)
+is a dry run: it builds and publishes nothing.
 
 ## License
 

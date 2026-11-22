@@ -205,11 +205,12 @@ button/modal styles, no `position: fixed`, must work in dark mode.
 ## Packaging (this template's shape)
 
 One dist, one plugin. In `pyproject.toml`: base `dependencies` stay at the SDK floor only
-(`3lc-compute-plugin-sdk>=0.3.1,<0.4.0`); the plugin's real deps go in its extra under
+(`3lc-compute-plugin-sdk>=0.7.0,<0.8.0`); the plugin's real deps go in its extra under
 `[project.optional-dependencies]` (that's what lands in the provisioned venv); the entry
 point under `[project.entry-points."tlc_compute.plugins"]` names the import package. The SDK
 brings the `tlc` data plane (`3lc[pandas]`) and the `tlc_plugin_sdk.shared.*` helpers — no
-separate `3lc` dep is needed. Everything resolves from public PyPI, no custom indexes needed.
+separate `3lc` dep is needed. Until SDK 0.7.0 and 3lc 3.5 are on PyPI, they install from the
+SDK's git commit and 3LC's staging index (`pyproject.toml`).
 
 `catalog.json` is the one-URL install listing: `source` is a PEP 508 git ref —
 `<dist>[<extra>] @ git+https://github.com/<you>/<repo>.git@main` — and the embedded
@@ -220,7 +221,7 @@ separate `3lc` dep is needed. Everything resolves from public PyPI, no custom in
 - Metadata on the class or a `register()` call — the manifest is the only metadata source.
 - Bare `fetch()` to your compute service instead of `PLUGIN_API.http.request()`.
 - Reaching for Hub internals (`TlcApi`, `TlcAuth`, `window.top`) or setting
-  `window.location.href`: the page runs in a frame; use `PLUGIN_API` and `PLUGIN_API.navigate`.
+  `window.location.href`: the page runs in a frame; use `PLUGIN_API` and `PLUGIN_API.nav.go`.
 - Calling compute routes outside your plugin without declaring them in `[ui] capabilities`.
 - Hardcoded colors / broken dark mode.
 - Hand-rolled job queue, job store, cancel route, or `get_active_jobs` — all host-owned.
