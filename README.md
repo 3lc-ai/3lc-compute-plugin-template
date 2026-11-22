@@ -33,17 +33,6 @@ provisions the plugin its own virtual environment, and runs it out-of-process be
 reverse proxy. Your dependencies live in your plugin's extra in
 [`pyproject.toml`](pyproject.toml) and never touch the host venv — pin anything you like.
 
-## Where your page runs
-
-The Hub shows `ui.html` in a sandboxed frame served by your compute service, never inside the
-Hub's own page, so a plugin cannot reach the Hub or the person's sign-in. For your page that
-means: talk to the Hub only through `window.PLUGIN_API` (`http.request` for your routes,
-`navigate()` to move the Hub), never through Hub globals like `TlcApi` or `window.top`. Plain
-`fetch` to other sites, CDN scripts, `localStorage`, downloads and new windows all work. If the
-page needs more than its own routes, declare it under `[ui] capabilities` in `plugin.toml`. The
-details and a table of what works are in
-[`.claude/skills/create-plugin/reference.md`](.claude/skills/create-plugin/reference.md) (UI).
-
 ## Make it yours
 
 Using [Claude Code](https://claude.com/claude-code)? Run **`/create-plugin <what it should
@@ -115,7 +104,7 @@ To develop against a sibling SDK checkout, override its source **uncommitted**:
 
 ### Editor autocomplete for `ui.html`
 
-Your fragment talks to the host through `window.PLUGIN_API` and its `jobs` helpers, and both
+Your fragment talks to the host through `window.PLUGIN_API` / `window.PluginJobs`, and both
 are **typed**: the declaration ships inside the pip-installed SDK wheel, and the repo-root
 [`jsconfig.json`](jsconfig.json) points TypeScript at it. Run `uv sync` once (creates
 `.venv/`) and VS Code autocompletes the whole bridge inside `ui.html` — no node, no build
@@ -146,14 +135,3 @@ curl -X POST http://localhost:5020/api/admin/plugins/catalogs \
 
 Apache-2.0 — see [LICENSE](LICENSE). Repos generated from this template are yours to
 license as you wish.
-
-## SDK 0.7.0 frame runtime
-
-Use the SDK [browser runtime guide](https://3lc-ai.github.io/3lc-compute-plugin-sdk/browser-runtime.html)
-and [agent guide](https://3lc-ai.github.io/3lc-compute-plugin-sdk/agent-guide.html).
-These pages publish with the SDK release; before release read the matching SDK branch sources.
-The host must serve the new runtime; upgrading only the plugin venv is insufficient.
-`PLUGIN_API.jobs` is installed by the runtime: new plugins do not inject a job tracker.
-Use namespaced helpers and register local cleanup with `lifecycle.onDispose`.
-Never cancel a running job on navigation, renewal failure, disconnect or disposal.
-Test explicit cancellation separately from viewer cleanup and recovery.
