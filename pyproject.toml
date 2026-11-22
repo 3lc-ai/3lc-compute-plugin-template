@@ -22,9 +22,9 @@ classifiers = ["License :: OSI Approved :: Apache Software License"]
 # Base = the SDK floor ONLY. The skeleton needs no more; your real plugin's deps go in its
 # extra below, never in the base. The SDK brings the `tlc` data plane (`3lc[pandas]`) and the
 # `tlc_plugin_sdk.shared.*` helpers with it — no separate `3lc` dep is needed. Everything resolves
-# from the source/index configuration below during this development migration.
+# from public PyPI.
 dependencies = [
-    "3lc-compute-plugin-sdk>=0.7.0,<0.8.0",
+    "3lc-compute-plugin-sdk>=0.4.0,<0.5.0",
 ]
 
 # Per-plugin extras — installed ONLY into that plugin's provisioned venv. Provisioning opts into
@@ -43,13 +43,15 @@ packages = [
     "src/tlc_plugin_template",
 ]
 
-# The development source configuration is at the end of this file.
+# Test-only dependencies: `uv sync` installs them; they never reach the plugin's provisioned venv.
+[dependency-groups]
+dev = ["pytest>=8"]
 
 # Ruff config mirrors 3lc-compute-plugin-sdk for a consistent house style. CI runs ruff
 # standalone (uvx) — linting must not require resolving any dependency stack.
 [tool.ruff]
 line-length = 120
-target-version = "py310"
+target-version = "py311"
 exclude = [".git", ".mypy_cache", ".ruff_cache", ".venv", "build", "dist"]
 
 [tool.ruff.lint]
@@ -62,18 +64,3 @@ convention = "google"
 [tool.ruff.format]
 preview = true
 docstring-code-format = true
-
-# Development-only source pin until the frame SDK is published. Never publish a
-# consumer release requiring an unavailable SDK. The staged core source must be
-# declared by each consuming project because uv sources are not transitive.
-[dependency-groups]
-dev = ["3lc>=3.5.0.dev149866,<4.0.0"]
-
-[[tool.uv.index]]
-name = "staging"
-url = "https://pypi.3lc.ai/repositories/prereleases/"
-explicit = true
-
-[tool.uv.sources]
-"3lc" = { index = "staging" }
-3lc-compute-plugin-sdk = { git = "https://github.com/3lc-ai/3lc-compute-plugin-sdk", rev = "ba0af88f7cf6accbee1b33ad3bc49e5e8b667943" }

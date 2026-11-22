@@ -23,6 +23,8 @@
     "checkJs": false,
     "allowJs": true,
     "typeRoots": [
+      ".venv/Lib/site-packages",
+      ".venv/lib/python3.14/site-packages",
       ".venv/lib/python3.12/site-packages",
       ".venv/lib/python3.13/site-packages",
       ".venv/lib/python3.11/site-packages",

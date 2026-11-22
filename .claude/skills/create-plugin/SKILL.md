@@ -93,6 +93,7 @@ surrounding documentation — the comments are part of the template's teaching s
    and flag it in your final report), and the `manifest` object mirrors `plugin.toml`.
 5. **`README.md`** — retitle for the new plugin; keep the run/dev-loop/catalog sections,
    updated with the new names.
+6. `uv lock` — the dist name and extra changed, and CI checks the lockfile.
 
 ## Step 2 — Implement the behavior
 
@@ -114,18 +115,13 @@ reference.md exactly — in particular:
 Rewrite `src/<package>/ui.html` as one self-contained fragment (scoped `<style>` + markup +
 one IIFE `<script>`), following reference.md → UI:
 
-- The page runs in a sandboxed frame on the compute service, not in the Hub's page
-  (reference.md → UI, "Where it runs"). Reach the host **only** through `window.PLUGIN_API`:
-  `http.request` for your own routes (never bare `fetch` to the compute service),
-  `PLUGIN_API.nav.go` to move the Hub, never `TlcApi`, `TlcAuth`, `window.top` or
-  `window.location.href`. Plain `fetch` to other sites' public APIs is fine.
-- Need more than your own routes (another plugin's routes, the person's name, the Hub's
-  address)? Declare it under `[ui] capabilities` in `plugin.toml`.
+- Reach the host **only** through `window.PLUGIN_API` (`authFetch`, never bare `fetch`).
 - Style with the house CSS variables and shared classes (`.plugin-page-narrow`, `.card`,
   `.btn btn-primary`, `.plugin-hero`, …) — no hardcoded colors, works in dark mode.
-- If the plugin has jobs: use `PLUGIN_API.jobs`, automatically installed by the SDK runtime.
-  Register local cleanup with `lifecycle.onDispose`; never cancel remote jobs there.
-- Update the endpoint URLs and CSS class prefix from `template-` to the new id.
+- If the plugin has jobs: start/track them with `window.PluginJobs`, which the plugin's
+  worker injects into the page (see reference.md).
+- Update the endpoint URLs, element ids and CSS class prefix from `template-` to the new id,
+  and `tests/ui.cjs` to test what the new page does.
 
 ## Step 4 — Verify
 
@@ -133,19 +129,8 @@ one IIFE `<script>`), following reference.md → UI:
 uvx --from 'ruff>=0.15,<0.16' ruff format .
 uvx --from 'ruff>=0.15,<0.16' ruff check .
 uv sync --extra <extra>          # resolves the venv; proves deps + extra wiring
-uv run python -c "from <package> import <Class>; p = <Class>(); print(type(p.get_ui_fragment()))"
-```
-
-Also confirm `plugin.toml` parses and agrees with the code:
-
-```bash
-uv run python -c "
-import tomllib, pathlib
-m = tomllib.loads(pathlib.Path('src/<package>/plugin.toml').read_text())
-assert m['runtime']['entrypoint'] == '<package>:<Class>', m['runtime']['entrypoint']
-assert m['runtime']['provision_extra'] == '<extra>'
-print(m['id'], m['version'])
-"
+uv run pytest                    # imports the plugin; plugin.toml, catalog.json, pyproject.toml agree
+node tests/ui.cjs                # the page against a stand-in PLUGIN_API
 ```
 
 Fix everything these surface. Do not commit unless asked.
@@ -163,14 +148,3 @@ curl -X POST http://localhost:5020/api/admin/plugins/dirs/reload \
 ```
 
 Flag anything left for them (e.g. catalog `source` URL if no git remote, GPU testing).
-
-## SDK 0.7.0 frame runtime
-
-Use the SDK [browser runtime guide](https://3lc-ai.github.io/3lc-compute-plugin-sdk/browser-runtime.html)
-and [agent guide](https://3lc-ai.github.io/3lc-compute-plugin-sdk/agent-guide.html).
-These pages publish with the SDK release; before release read the matching SDK branch sources.
-The host must serve the new runtime; upgrading only the plugin venv is insufficient.
-`PLUGIN_API.jobs` is installed by the runtime: new plugins do not inject a job tracker.
-Use namespaced helpers and register local cleanup with `lifecycle.onDispose`.
-Never cancel a running job on navigation, renewal failure, disconnect or disposal.
-Test explicit cancellation separately from viewer cleanup and recovery.

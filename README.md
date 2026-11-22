@@ -20,7 +20,8 @@ lives in the
 ├── pyproject.toml            # one dist; your plugin's extra + entry point
 ├── catalog.json              # your shop listing — point it at your repo (see below)
 ├── jsconfig.json             # types for window.PLUGIN_API in ui.html
-├── .github/workflows/ci.yml  # ruff lint + format, standalone
+├── .github/workflows/ci.yml  # ruff, the tests, the lockfile and the build
+├── .github/workflows/release.yml  # publishes to PyPI on a vX.Y.Z tag
 └── src/
     └── tlc_plugin_template/  # ← rename me
         ├── plugin.toml       #    manifest (metadata; read without import)
@@ -32,17 +33,6 @@ The plugin is `venv`-isolated: the host reads `plugin.toml` **without importing 
 provisions the plugin its own virtual environment, and runs it out-of-process behind a
 reverse proxy. Your dependencies live in your plugin's extra in
 [`pyproject.toml`](pyproject.toml) and never touch the host venv — pin anything you like.
-
-## Where your page runs
-
-The Hub shows `ui.html` in a sandboxed frame served by your compute service, never inside the
-Hub's own page, so a plugin cannot reach the Hub or the person's sign-in. For your page that
-means: talk to the Hub only through `window.PLUGIN_API` (`http.request` for your routes,
-`navigate()` to move the Hub), never through Hub globals like `TlcApi` or `window.top`. Plain
-`fetch` to other sites, CDN scripts, `localStorage`, downloads and new windows all work. If the
-page needs more than its own routes, declare it under `[ui] capabilities` in `plugin.toml`. The
-details and a table of what works are in
-[`.claude/skills/create-plugin/reference.md`](.claude/skills/create-plugin/reference.md) (UI).
 
 ## Make it yours
 
@@ -66,6 +56,8 @@ Doing it by hand: after **Use this template**, four renames:
    package path under `[tool.hatch.build.targets.wheel]`.
 4. **The catalog.** In [`catalog.json`](catalog.json): `id`, the manifest copy, and the
    `source` — point it at *your* repo (see below).
+
+Run `uv lock` after the renames: the dist name changed, and CI checks the lockfile.
 
 Then fill in the class: `compute()` and `get_ui_fragment()` are the whole required contract;
 grow into `run_job(ctx)` and `get_route_handlers()` by cribbing from
@@ -115,7 +107,7 @@ To develop against a sibling SDK checkout, override its source **uncommitted**:
 
 ### Editor autocomplete for `ui.html`
 
-Your fragment talks to the host through `window.PLUGIN_API` and its `jobs` helpers, and both
+Your fragment talks to the host through `window.PLUGIN_API` / `window.PluginJobs`, and both
 are **typed**: the declaration ships inside the pip-installed SDK wheel, and the repo-root
 [`jsconfig.json`](jsconfig.json) points TypeScript at it. Run `uv sync` once (creates
 `.venv/`) and VS Code autocompletes the whole bridge inside `ui.html` — no node, no build
@@ -142,18 +134,21 @@ curl -X POST http://localhost:5020/api/admin/plugins/catalogs \
   -d '{"url": "https://raw.githubusercontent.com/you/your-repo/main/catalog.json", "persist": true}'
 ```
 
+## Publish to PyPI
+
+[`release.yml`](.github/workflows/release.yml) publishes your plugin when you push a `vX.Y.Z`
+tag, never from this template repo. Set it up once:
+
+1. On PyPI, add a [trusted publisher](https://docs.pypi.org/trusted-publishers/) for your
+   project: your GitHub owner and repository, workflow `release.yml`, environment `pypi`.
+2. In your GitHub repository's settings, create an environment named `pypi`.
+
+To release, set the new `version` in `pyproject.toml` and `plugin.toml`, list it in
+`catalog.json` (the tests check all three agree), then push the tag:
+`git tag v0.2.0 && git push origin v0.2.0`. Running the workflow by hand (Actions → Release)
+is a dry run: it builds and publishes nothing.
+
 ## License
 
 Apache-2.0 — see [LICENSE](LICENSE). Repos generated from this template are yours to
 license as you wish.
-
-## SDK 0.7.0 frame runtime
-
-Use the SDK [browser runtime guide](https://3lc-ai.github.io/3lc-compute-plugin-sdk/browser-runtime.html)
-and [agent guide](https://3lc-ai.github.io/3lc-compute-plugin-sdk/agent-guide.html).
-These pages publish with the SDK release; before release read the matching SDK branch sources.
-The host must serve the new runtime; upgrading only the plugin venv is insufficient.
-`PLUGIN_API.jobs` is installed by the runtime: new plugins do not inject a job tracker.
-Use namespaced helpers and register local cleanup with `lifecycle.onDispose`.
-Never cancel a running job on navigation, renewal failure, disconnect or disposal.
-Test explicit cancellation separately from viewer cleanup and recovery.
