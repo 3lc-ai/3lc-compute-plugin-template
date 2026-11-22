@@ -20,7 +20,8 @@ lives in the
 ├── pyproject.toml            # one dist; your plugin's extra + entry point
 ├── catalog.json              # your shop listing — point it at your repo (see below)
 ├── jsconfig.json             # types for window.PLUGIN_API in ui.html
-├── .github/workflows/ci.yml  # ruff lint + format, standalone
+├── .github/workflows/ci.yml  # ruff, the tests, the lockfile and the build
+├── .github/workflows/release.yml  # publishes to PyPI on a vX.Y.Z tag
 └── src/
     └── tlc_plugin_template/  # ← rename me
         ├── plugin.toml       #    manifest (metadata; read without import)
@@ -130,6 +131,20 @@ curl -X POST http://localhost:5020/api/admin/plugins/catalogs \
   -H 'Content-Type: application/json' \
   -d '{"url": "https://raw.githubusercontent.com/you/your-repo/main/catalog.json", "persist": true}'
 ```
+
+## Publish to PyPI
+
+[`release.yml`](.github/workflows/release.yml) publishes your plugin when you push a `vX.Y.Z`
+tag, never from this template repo. Set it up once:
+
+1. On PyPI, add a [trusted publisher](https://docs.pypi.org/trusted-publishers/) for your
+   project: your GitHub owner and repository, workflow `release.yml`, environment `pypi`.
+2. In your GitHub repository's settings, create an environment named `pypi`.
+
+To release, set the new `version` in `pyproject.toml` and `plugin.toml`, list it in
+`catalog.json` (the tests check all three agree), then push the tag:
+`git tag v0.2.0 && git push origin v0.2.0`. Running the workflow by hand (Actions → Release)
+is a dry run: it builds and publishes nothing.
 
 ## License
 
