@@ -43,11 +43,15 @@ packages = [
     "src/tlc_plugin_template",
 ]
 
+# Test-only dependencies: `uv sync` installs them; they never reach the plugin's provisioned venv.
+[dependency-groups]
+dev = ["pytest>=8"]
+
 # Ruff config mirrors 3lc-compute-plugin-sdk for a consistent house style. CI runs ruff
 # standalone (uvx) — linting must not require resolving any dependency stack.
 [tool.ruff]
 line-length = 120
-target-version = "py310"
+target-version = "py311"
 exclude = [".git", ".mypy_cache", ".ruff_cache", ".venv", "build", "dist"]
 
 [tool.ruff.lint]
