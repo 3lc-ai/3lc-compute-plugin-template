@@ -205,7 +205,7 @@ button/modal styles, no `position: fixed`, must work in dark mode.
 ## Packaging (this template's shape)
 
 One dist, one plugin. In `pyproject.toml`: base `dependencies` stay at the SDK floor only
-(`3lc-compute-plugin-sdk>=0.3.1,<0.4.0`); the plugin's real deps go in its extra under
+(`3lc-compute-plugin-sdk>=0.4.0,<0.5.0`); the plugin's real deps go in its extra under
 `[project.optional-dependencies]` (that's what lands in the provisioned venv); the entry
 point under `[project.entry-points."tlc_compute.plugins"]` names the import package. The SDK
 brings the `tlc` data plane (`3lc[pandas]`) and the `tlc_plugin_sdk.shared.*` helpers — no
