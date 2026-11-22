@@ -57,6 +57,8 @@ Doing it by hand: after **Use this template**, four renames:
 4. **The catalog.** In [`catalog.json`](catalog.json): `id`, the manifest copy, and the
    `source` — point it at *your* repo (see below).
 
+Run `uv lock` after the renames: the dist name changed, and CI checks the lockfile.
+
 Then fill in the class: `compute()` and `get_ui_fragment()` are the whole required contract;
 grow into `run_job(ctx)` and `get_route_handlers()` by cribbing from
 [the example](https://github.com/3lc-ai/3lc-compute-plugin-example).

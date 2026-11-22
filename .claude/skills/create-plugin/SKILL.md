@@ -93,6 +93,7 @@ surrounding documentation — the comments are part of the template's teaching s
    and flag it in your final report), and the `manifest` object mirrors `plugin.toml`.
 5. **`README.md`** — retitle for the new plugin; keep the run/dev-loop/catalog sections,
    updated with the new names.
+6. `uv lock` — the dist name and extra changed, and CI checks the lockfile.
 
 ## Step 2 — Implement the behavior
 
@@ -119,7 +120,8 @@ one IIFE `<script>`), following reference.md → UI:
   `.btn btn-primary`, `.plugin-hero`, …) — no hardcoded colors, works in dark mode.
 - If the plugin has jobs: start/track them with `window.PluginJobs`, which the plugin's
   worker injects into the page (see reference.md).
-- Update the endpoint URLs and CSS class prefix from `template-` to the new id.
+- Update the endpoint URLs, element ids and CSS class prefix from `template-` to the new id,
+  and `tests/ui.cjs` to test what the new page does.
 
 ## Step 4 — Verify
 
@@ -127,19 +129,8 @@ one IIFE `<script>`), following reference.md → UI:
 uvx --from 'ruff>=0.15,<0.16' ruff format .
 uvx --from 'ruff>=0.15,<0.16' ruff check .
 uv sync --extra <extra>          # resolves the venv; proves deps + extra wiring
-uv run python -c "from <package> import <Class>; p = <Class>(); print(type(p.get_ui_fragment()))"
-```
-
-Also confirm `plugin.toml` parses and agrees with the code:
-
-```bash
-uv run python -c "
-import tomllib, pathlib
-m = tomllib.loads(pathlib.Path('src/<package>/plugin.toml').read_text())
-assert m['runtime']['entrypoint'] == '<package>:<Class>', m['runtime']['entrypoint']
-assert m['runtime']['provision_extra'] == '<extra>'
-print(m['id'], m['version'])
-"
+uv run pytest                    # imports the plugin; plugin.toml, catalog.json, pyproject.toml agree
+node tests/ui.cjs                # the page against a stand-in PLUGIN_API
 ```
 
 Fix everything these surface. Do not commit unless asked.
