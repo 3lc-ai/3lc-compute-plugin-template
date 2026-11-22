@@ -5,6 +5,9 @@ This is a **GitHub template repository**: click **Use this template** (top right
 a fresh repo — your name, your history — containing the smallest viable plugin, ready to
 rename and grow. Nothing in it is scaffolding you delete; everything is something you edit.
 
+> Until 3lc 3.5 and `3lc-compute-plugin-sdk` 0.7.0 are on PyPI, installing this template
+> (`uv sync`) needs internal 3LC access to their staging index.
+
 Want to see what a plugin can *do* first? The example plugin,
 [**Mission Control**](https://github.com/3lc-ai/3lc-compute-plugin-example), is a runnable
 tour of the whole contract — jobs with live progress and abort, custom REST routes, the
@@ -39,7 +42,7 @@ reverse proxy. Your dependencies live in your plugin's extra in
 The Hub shows `ui.html` in a sandboxed frame served by your compute service, never inside the
 Hub's own page, so a plugin cannot reach the Hub or the person's sign-in. For your page that
 means: talk to the Hub only through `window.PLUGIN_API` (`http.request` for your routes,
-`navigate()` to move the Hub), never through Hub globals like `TlcApi` or `window.top`. Plain
+`nav.go()` to move the Hub), never through Hub globals like `TlcApi` or `window.top`. Plain
 `fetch` to other sites, CDN scripts, `localStorage`, downloads and new windows all work. If the
 page needs more than its own routes, declare it under `[ui] capabilities` in `plugin.toml`. The
 details and a table of what works are in
@@ -67,6 +70,8 @@ Doing it by hand: after **Use this template**, four renames:
    package path under `[tool.hatch.build.targets.wheel]`.
 4. **The catalog.** In [`catalog.json`](catalog.json): `id`, the manifest copy, and the
    `source` — point it at *your* repo (see below).
+
+Run `uv lock` after the renames: the dist name changed, and CI checks the lockfile.
 
 Then fill in the class: `compute()` and `get_ui_fragment()` are the whole required contract;
 grow into `run_job(ctx)` and `get_route_handlers()` by cribbing from
